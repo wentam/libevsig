@@ -70,6 +70,6 @@ build/%.o: src/%.c
 .PHONY: install
 install:
 	mkdir -p ${DESTDIR}${prefix}/lib/
-	mkdir -p ${DESTDIR}${prefix}/include/
+	mkdir -p ${DESTDIR}${prefix}/include/evsig/
 	cp build/lib/libevsig.so ${DESTDIR}${prefix}/lib/
-	cp -r include/lib/* ${DESTDIR}${prefix}/include/
+	cp -r include/lib/* ${DESTDIR}${prefix}/include/evsig/
