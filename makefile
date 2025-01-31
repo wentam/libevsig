@@ -3,7 +3,7 @@ CC ?= clang
 prefix ?= /usr/local/
 # -- end config
 
-INCLUDE = -Iinclude/ -I.
+INCLUDE = -Iinclude/ -Iinclude/lib/ -I.
 CFLAGS = -Wall -pthread $(INCLUDE) # -Wconversion
 
 rwildcard=$(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))

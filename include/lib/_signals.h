@@ -1,6 +1,6 @@
 #pragma once
 #include <threads.h>
-#include "lib/unwind.h"
+#include "unwind.h"
 #include "stdlib.h"
 
 typedef struct {
