@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include "lib/signals.h"
 #include "lib/sigwrap.h"
+#include <stdint.h>
+#include <stdlib.h>
+#include "lib/unwind.h"
 
 void signal_func() {
   //SIG_ASSERT_HANDLER(SIGNAL_FAIL);
