@@ -3,13 +3,21 @@
 #include <signal.h>
 #include <stdlib.h>
 #include "lib/sigwrap.h"
-#include "lib/evsig_util.h"
 #include "stdio.h"
 #include "threads.h"
 #include "stdbool.h"
 #include <stdint.h>
 #include "lib/_signals.h"
 #include "lib/unwind.h"
+
+#define CLR_RED     "\x1b[31m"
+#define CLR_GREEN   "\x1b[32m"
+#define CLR_YELLOW  "\x1b[33m"
+#define CLR_BLUE    "\x1b[34m"
+#define CLR_MAGENTA "\x1b[35m"
+#define CLR_CYAN    "\x1b[36m"
+#define CLR_BOLD    "\033[1m"
+#define CLR_RESET   "\x1b[0m"
 
 thread_local sig_handler_stack_entry* sig_handler_stack;
 thread_local int64_t sig_handler_stack_alloc;

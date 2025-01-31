@@ -1,5 +1,8 @@
 #pragma once
-#include "lib/evsig_util.h"
+
+#define __GENSYM(base, counter) base##_gensym_##counter
+#define _GENSYM(base, counter) __GENSYM(base, counter)
+#define GENSYM(base) _GENSYM(base,__LINE__)
 
 // TODO document how to use this for event-based programming.
 //      mention how to not consume a signal, mention that you can push a signal handler that does

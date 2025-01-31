@@ -3,7 +3,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <threads.h>
-#include "lib/evsig_util.h"
+
+#define __GENSYM(base, counter) base##_gensym_##counter
+#define _GENSYM(base, counter) __GENSYM(base, counter)
+#define GENSYM(base) _GENSYM(base,__LINE__)
 
 typedef struct {
   bool returned;
