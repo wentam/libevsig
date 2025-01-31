@@ -20,7 +20,7 @@
     };
 
     # Package
-    packages.default = pkgs.clangStdenv.mkDerivation {
+    packages.libevsig = pkgs.clangStdenv.mkDerivation {
       name = "libevsig";
       src = ./.;
 
@@ -28,5 +28,7 @@
       dontConfigure = true;
       makeFlags = ["-j12" "prefix=$(out)"];
     };
+
+    packages.default = packages.libevsig;
   }));
 }
