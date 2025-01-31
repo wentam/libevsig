@@ -47,9 +47,6 @@ clean:
 build/lib/:
 	mkdir -p build/lib
 
-build/lib/build-time-headers/:
-	mkdir -p build/lib/build-time-headers/
-
 build/cli/:
 	mkdir -p build/cli
 
