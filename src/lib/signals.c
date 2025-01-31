@@ -3,7 +3,7 @@
 #include <signal.h>
 #include <stdlib.h>
 #include "lib/sigwrap.h"
-#include "lib/util.h"
+#include "lib/evsig_util.h"
 #include "stdio.h"
 #include "threads.h"
 #include "stdbool.h"

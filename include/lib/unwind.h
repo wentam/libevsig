@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <threads.h>
-#include "lib/util.h"
+#include "lib/evsig_util.h"
 
 typedef struct {
   bool returned;

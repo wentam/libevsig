@@ -3,8 +3,6 @@ CC ?= clang
 prefix ?= /usr/local/
 # -- end config
 
-$(info $(.VARIABLES))
-
 INCLUDE = -Iinclude/ -I.
 CFLAGS = -Wall -pthread $(INCLUDE) # -Wconversion
 
@@ -72,4 +70,6 @@ build/%.o: src/%.c
 .PHONY: install
 install:
 	mkdir -p ${DESTDIR}${prefix}/lib/
+	mkdir -p ${DESTDIR}${prefix}/include/
 	cp build/lib/libevsig.so ${DESTDIR}${prefix}/lib/
+	cp -r include/lib/* ${DESTDIR}${prefix}/include/

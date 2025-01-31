@@ -1,5 +1,5 @@
 #pragma once
-#include "lib/util.h"
+#include "lib/evsig_util.h"
 
 // TODO document how to use this for event-based programming.
 //      mention how to not consume a signal, mention that you can push a signal handler that does
