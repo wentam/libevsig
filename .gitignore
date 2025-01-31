@@ -4,3 +4,4 @@ vgcore*
 massif*
 cachegrind*
 callgrind*
+result

@@ -1,6 +1,9 @@
 # -- config
 CC ?= clang
+prefix ?= /usr/local/
 # -- end config
+
+$(info $(.VARIABLES))
 
 INCLUDE = -Iinclude/ -I.
 CFLAGS = -Wall -pthread $(INCLUDE) # -Wconversion
@@ -51,7 +54,7 @@ build/cli/:
 	mkdir -p build/cli
 
 build/lib/libevsig.so: build/lib/ $(OBJS)
-	$(CC) $(CFLAGS) -lm -lz -shared -o $@ $(OBJS)
+	$(CC) $(CFLAGS) -lm -shared -o $@ $(OBJS)
 
 build/cli/evsig-cli: build/cli/ $(CLI_OBJS) build/lib/libevsig.so
 	$(CC) $(CFLAGS) -Lbuild/lib/ -levsig -o $@ $(CLI_OBJS)
@@ -65,3 +68,8 @@ build/%.o: src/%.c
 		iout=$$(include-what-you-use -Xiwyu --error=1 -Xiwyu --no_comments $(CFLAGS) $< 2>&1); \
 		if [ $$? -ne 0 ]; then echo "$$iout"; exit 1; fi; \
 	fi
+
+.PHONY: install
+install:
+	mkdir -p ${DESTDIR}${prefix}/lib/
+	cp build/lib/libevsig.so ${DESTDIR}${prefix}/lib/

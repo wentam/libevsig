@@ -9,8 +9,7 @@ void signal_func() {
   //SIG_ASSERT_HANDLER(SIGNAL_FAIL);
   //int64_t* data = sw_malloc(sizeof(int64_t));
   //*data = 42;
-  SIG_SEND(SIGNAL_FAIL, "something bad happened", NULL, NULL, 
-{});
+  SIG_SEND(SIGNAL_FAIL, "something bad happened", NULL, NULL, {});
 }
 
 void middle_func() {
@@ -34,13 +33,13 @@ int main() {
 
   {
     //SIG_AUTOPOP_HANDLER(SIGNAL_FAIL, fail_handler, NULL);
-    middle_func();
+    //middle_func();
 
-    //TRY_CATCH({
-    //  middle_func();
-    //}, SIGNAL_FAIL, {
-    //  sw_fprintf(stderr, "catch!\n");
-    //});
+    TRY_CATCH({
+      middle_func();
+    }, SIGNAL_FAIL, {
+      sw_fprintf(stderr, "catch!\n");
+    });
   }
 
   sig_cleanup();

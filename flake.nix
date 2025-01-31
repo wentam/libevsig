@@ -18,5 +18,15 @@
 
       LD_LIBRARY_PATH = "build/lib/";
     };
+
+    # Package
+    packages.default = pkgs.clangStdenv.mkDerivation {
+      name = "libevsig";
+      src = ./.;
+
+      buildInputs = with pkgs; [ ];
+      dontConfigure = true;
+      makeFlags = ["-j12" "prefix=$(out)"];
+    };
   }));
 }
