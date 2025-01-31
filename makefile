@@ -35,10 +35,10 @@ dev: CFLAGS += -g -Og -Werror -fsanitize=address
 default: lib cli
 
 .PHONY: lib
-lib: build/lib/libtgmap.so
+lib: build/lib/libevsig.so
 
 .PHONY: cli
-cli: build/cli/tgmap-cli
+cli: build/cli/evsig-cli
 
 .PHONY: clean
 clean:
@@ -53,11 +53,11 @@ build/lib/build-time-headers/:
 build/cli/:
 	mkdir -p build/cli
 
-build/lib/libevsig.so: build/lib/ $(OBJS) \
+build/lib/libevsig.so: build/lib/ $(OBJS)
 	$(CC) $(CFLAGS) -lm -lz -shared -o $@ $(OBJS)
 
-build/cli/evsig-cli: build/cli/ $(CLI_OBJS) build/lib/libtgmap.so
-	$(CC) $(CFLAGS) -Lbuild/lib/ -ltgmap -o $@ $(CLI_OBJS)
+build/cli/evsig-cli: build/cli/ $(CLI_OBJS) build/lib/libevsig.so
+	$(CC) $(CFLAGS) -Lbuild/lib/ -levsig -o $@ $(CLI_OBJS)
 
 -include $(DEPS)
 -include $(CLI_DEPS)
