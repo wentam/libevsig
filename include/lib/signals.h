@@ -20,6 +20,8 @@
 //      basically always OK to error and exit.
 // TODO document how setting RESTART_NULL doesn't consume, but anything else consumes the signal
 // TODO unit tests
+// TODO SIG_AUTOPOP_HANDLER might need to use UNWIND_ACTION and not sig_autopop - I think
+//      we could fail to pop a handler if we unwind over it currently
 
 // Signal type definitions
 //
