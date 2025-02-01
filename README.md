@@ -2,50 +2,20 @@ Libevsig is an exception system, condition system, event-based programming frame
 
 While flexible, the principle purpose is error handling.
 
+To understand the value of this Common Lisp condition style design over simple exceptions, see [here](https://youtu.be/4NO83wZVT0A?t=2832).
+
 *NOTE: this project is experimental, do not expect a stable API or ABI*
 
 # Examples
 
-Exception handling
-```C
-#include <stdio.h>
-#include "lib/signals.h"
-#include "lib/sigwrap.h"
-#include <stdlib.h>
-#include "lib/unwind.h"
-
-void signal_func() {
-  SIG_SEND(SIGNAL_FAIL, "something bad happened", NULL, NULL, {});
-}
-
-void middle_func() {
-  sw_fprintf(stderr, "pretending to ALLOCATE something\n");
-  UNWIND_ACTION(unwind_handler_print, "pretending to FREE something\n");
-  signal_func();
-}
-
-int main() {
-  sig_init();
-
-  TRY_CATCH({
-    middle_func();
-  }, SIGNAL_FAIL, {
-    sw_fprintf(stderr, "catch!\n");
-  });
-
-  sig_cleanup();
-  return 0;
-}
-```
-
 Common Lisp style conditions
 ```C
 #include <stdio.h>
-#include "lib/signals.h"
-#include "lib/sigwrap.h"
+#include "evsig/signals.h"
+#include "evsig/sigwrap.h"
 #include <stdint.h>
 #include <stdlib.h>
-#include "lib/unwind.h"
+#include "evsig/unwind.h"
 
 void signal_func() {
   SIG_SEND(SIGNAL_FAIL, "something bad happened", NULL, NULL, {});
@@ -80,11 +50,43 @@ int main() {
 
 ```
 
+Exception-style usage (this is just a convenience wrapper around the CL-style usage)
+```C
+#include <stdio.h>
+#include "evsig/signals.h"
+#include "evsig/sigwrap.h"
+#include <stdlib.h>
+#include "evsig/unwind.h"
+
+void signal_func() {
+  SIG_SEND(SIGNAL_FAIL, "something bad happened", NULL, NULL, {});
+}
+
+void middle_func() {
+  sw_fprintf(stderr, "pretending to ALLOCATE something\n");
+  UNWIND_ACTION(unwind_handler_print, "pretending to FREE something\n");
+  signal_func();
+}
+
+int main() {
+  sig_init();
+
+  TRY_CATCH({
+    middle_func();
+  }, SIGNAL_FAIL, {
+    sw_fprintf(stderr, "catch!\n");
+  });
+
+  sig_cleanup();
+  return 0;
+}
+```
+
 # How it works
 
 ## The signal system
 
-TODO
+Signal handler functions are pushed onto a thread-local stack. When a signal is sent, handlers for that signal type are called, walking down the stack until one selects an approprate restart. Restarts - of which there are default and user-defined entries - describe how to continue execution after the signal. Unwinding the stack via RESTART_UNWIND is only one option - you may also instruct any other behavior, such as retrying an operation in the same stack frame/function that sent the signal.
 
 ## The unwind system
 
