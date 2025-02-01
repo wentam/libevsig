@@ -25,10 +25,7 @@ void           _sig_free_restart(sig_restart* s);
 void           _sig_assert_handler(const char* sig_type);
 void           _sig_assertwarn_handler(const char* sig_type);
 void           _unwind_handler_free_restart(void* restart);
-
-// Helper to free handler
-[[maybe_unused]] static void sig_autopop_impl(uint64_t* p) { _sig_rm_handler(*p); }
-#define sig_autopop __attribute__((__cleanup__(sig_autopop_impl)))
+void           _unwind_handler_sig_rm_handler(void* id);
 
 #define _SIG_SEND(sig_type, msg, signal_data, signal_data_cleanup_func, your_restarts, gensym) \
   { \
@@ -52,3 +49,8 @@ sig_restart try_catch_handler(const char* sig_type, void* userdata, char* msg, v
   }), ({ \
     catch_code; \
   }))
+
+
+#define _SIG_AUTOPOP_HANDLER(sig_type, handler, userdata, gensym) \
+  uint64_t gensym = _sig_push_handler(sig_type, handler, userdata); \
+  UNWIND_ACTION(_unwind_handler_sig_rm_handler, &gensym);

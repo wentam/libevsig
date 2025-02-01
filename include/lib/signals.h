@@ -20,8 +20,6 @@
 //      basically always OK to error and exit.
 // TODO document how setting RESTART_NULL doesn't consume, but anything else consumes the signal
 // TODO unit tests
-// TODO SIG_AUTOPOP_HANDLER might need to use UNWIND_ACTION and not sig_autopop - I think
-//      we could fail to pop a handler if we unwind over it currently
 
 // Signal type definitions
 //
@@ -116,7 +114,7 @@ typedef sig_restart (*sig_handler)(const char* sig_type,
 
 // Define a signal handler. Handler is removed at end of scope.
 #define SIG_AUTOPOP_HANDLER(sig_type, handler, userdata) \
-  sig_autopop uint64_t GENSYM(sighandler) = _sig_push_handler(sig_type, handler, userdata);
+  _SIG_AUTOPOP_HANDLER(sig_type, handler, userdata, GENSYM(sighandler))
 
 // Define a signal handler. Returns an id. Handler sticks around until removed via SIG_RM_HANDLER
 #define SIG_PERSISTENT_HANDLER(sig_type, handler, userdata) \

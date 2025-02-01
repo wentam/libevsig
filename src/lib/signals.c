@@ -170,7 +170,6 @@ void _sig_rm_handler(uint64_t id) {
 
   // Shift found handler out
   if (found >= 0) {
-    fprintf(stderr, "removing handler\n");
     for (int64_t i = found; i < sig_handler_stack_fill-1; i++) {
       sig_handler_stack[i] = sig_handler_stack[i+1];
     }
@@ -212,4 +211,9 @@ sig_restart try_catch_handler(const char* sig_type, void* userdata, char* msg, v
   return (sig_restart){ .restart_type = SIG_RESTART_UNWIND,
                         .restart_data = userdata,
                         .restart_data_cleanup = NULL};
+}
+
+void _unwind_handler_sig_rm_handler(void* ptr) {
+  uint64_t id = *((uint64_t*)ptr);
+  _sig_rm_handler(id);
 }
