@@ -30,7 +30,7 @@ void top_func() {
   SIG_PROVIDE_RESTART(SIGNAL_FAIL, {
     SIG_SEND(SIGNAL_FAIL, "something bad happened", NULL, NULL);
   }, SIG_RESTART_TOP, {
-    fprintf(stderr, "RESTART_TOP\n");
+    sw_fprintf(stderr, "RESTART_TOP\n");
     exit(1);
   });
 }
@@ -42,7 +42,7 @@ void middle_func() {
   SIG_PROVIDE_RESTART(SIGNAL_FAIL, {
     top_func();
   }, SIG_RESTART_MIDDLE, {
-    fprintf(stderr, "RESTART_MIDDLE\n");
+    sw_fprintf(stderr, "RESTART_MIDDLE\n");
     exit(1);
   });
 }
@@ -60,7 +60,7 @@ int main() {
     SIG_PROVIDE_RESTART(SIGNAL_FAIL, {
       middle_func();
     }, SIG_RESTART_MAIN, {
-      fprintf(stderr, "RESTART_MAIN\n");
+      sw_fprintf(stderr, "RESTART_MAIN\n");
       exit(1);
     });
   }
