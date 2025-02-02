@@ -12,8 +12,8 @@ The functions main, middle, and top all have provided restarts. Depending on wha
 returns, we can return to any of the those places in the stack providing a custom recovery for
 each.
 
-Also observe how if fail_handler returns SIG_RESTART_MAIN, we pretend to free a resource even
-though the stack unwinds past it due to UNWIND_ACTION.
+Also observe how if fail_handler returns SIG_RESTART_MAIN, we pretend to free a resource due
+to UNWIND_ACTION even though the stack unwinds past it.
 
 ```C
 #include <stdio.h>
