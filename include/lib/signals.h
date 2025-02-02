@@ -18,7 +18,6 @@
 // TODO document how setting RESTART_NULL doesn't consume, but anything else consumes the signal
 // TODO unit tests
 // TODO typedef sig_type and restart_type to const char*, use that everywhere?
-// TODO ability to check if a restart exists in a signal handler
 // TODO better names for SIG_AUTOPOP_HANDLER and SIG_PERSISTENT_HANDLER?
 // TODO some way to provide multiple restarts for a piece of code without needing to nest
 //      SIG_PROVIDE_RESTART inside eachother? Variable length args?
@@ -113,7 +112,7 @@ const char* sig_static_handler(const char* sig_type, void* userdata, char* msg, 
 
 // Define a signal handler. Returns an id. Handler sticks around until removed via SIG_RM_HANDLER
 #define SIG_PERSISTENT_HANDLER(sig_type, handler, userdata) \
-  _sig_push_handler(sig_type, handler, userdata);
+  _sig_push_handler(sig_type, handler, userdata)
 
 // Remove a signal handler by id returned from SIG_PERSISTENT_HANDLER
 #define SIG_RM_HANDLER(id) \
@@ -121,3 +120,6 @@ const char* sig_static_handler(const char* sig_type, void* userdata, char* msg, 
 
 // Assert that a handler exists for a signal, useful to ensure important signals are handled
 #define SIG_ASSERT_HANDLER(sig_type) _sig_assert_handler(sig_type)
+
+#define SIG_RESTART_AVAILABLE(sig_type, restart_type) \
+  _sig_restart_available(sig_type, restart_type)

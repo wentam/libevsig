@@ -31,14 +31,16 @@ void middle_func() {
 }
 
 const char* fail_handler(const char* sig_type, void* userdata, char* msg, void* signal_data) {
-  return SIG_RESTART_MAIN2;
+  if (SIG_RESTART_AVAILABLE(sig_type, SIG_RESTART_MAIN2))
+    return SIG_RESTART_MAIN2;
+  return SIG_RESTART_MAIN;
 }
 
 int main() {
   sig_init();
 
   {
-    SIG_AUTOPOP_HANDLER(SIGNAL_FAIL, sig_static_handler, (void*)SIG_RESTART_MAIN);
+    SIG_AUTOPOP_HANDLER(SIGNAL_FAIL, fail_handler, NULL);
 
     SIG_PROVIDE_RESTART(SIGNAL_FAIL, ({
       SIG_PROVIDE_RESTART(SIGNAL_FAIL, ({

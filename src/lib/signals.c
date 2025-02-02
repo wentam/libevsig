@@ -190,6 +190,14 @@ void _sig_rm_restart(uint64_t id) {
   }
 }
 
+bool _sig_restart_available(const char* sig_type, const char* restart_type) {
+  for (int64_t i = sig_restart_stack_fill-1; i >= 0; i--) {
+    if (sig_restart_stack[i].sig_type == sig_type
+        && sig_restart_stack[i].restart_type == restart_type) return true;
+  }
+  return false;
+}
+
 const uint64_t _sig_push_handler(const char* sig_type, sig_handler handler, void* userdata) {
   if (sig_handler_stack_fill+1 > sig_handler_stack_alloc) {
     sig_handler_stack_alloc *= 2;

@@ -36,6 +36,7 @@ void           _sig_assert_handler(const char* sig_type);
 void           _sig_assertwarn_handler(const char* sig_type);
 uint64_t       _sig_push_restart(const char* sig_type, const char* restart_type, unwind_return_point* p);
 void           _sig_rm_restart(uint64_t id);
+bool           _sig_restart_available(const char* sig_type, const char* restart_type);
 void           _unwind_handler_sig_rm_handler(void* id);
 void           _unwind_handler_sig_rm_restart(void* id);
 
