@@ -96,6 +96,9 @@ typedef const char* (*sig_handler)(const char* sig_type,
 #include "_signals.h"
 #include "unwind.h"
 
+// Convenience handler that selects whatever restart it's passed as userdata
+const char* sig_static_handler(const char* sig_type, void* userdata, char* msg, void* signal_data);
+
 // Send a signal
 #define SIG_SEND(sig_type, msg, signal_data, signal_data_cleanup_func) \
   _SIG_SEND(sig_type, msg, signal_data, signal_data_cleanup_func, GENSYM(sigsend)); \

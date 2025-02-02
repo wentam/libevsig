@@ -273,3 +273,8 @@ void _unwind_handler_sig_rm_restart(void* ptr) {
 }
 
 
+const char* sig_static_handler(const char* sig_type, void* userdata, char* msg, void* signal_data) {
+  return userdata;
+}
+
+

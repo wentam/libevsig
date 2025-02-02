@@ -38,7 +38,7 @@ int main() {
   sig_init();
 
   {
-    SIG_AUTOPOP_HANDLER(SIGNAL_FAIL, fail_handler, NULL);
+    SIG_AUTOPOP_HANDLER(SIGNAL_FAIL, sig_static_handler, (void*)SIG_RESTART_MAIN);
 
     SIG_PROVIDE_RESTART(SIGNAL_FAIL, ({
       SIG_PROVIDE_RESTART(SIGNAL_FAIL, ({
