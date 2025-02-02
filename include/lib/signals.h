@@ -102,7 +102,7 @@ typedef const char* (*sig_handler)(const char* sig_type,
 
 
 #define SIG_PROVIDE_RESTART(sig_type, might_signal_code, restart_type, restart_action) \
-  _SIG_PROVIDE_RESTART(sig_type, might_signal_code, restart_type, restart_action, GENSYM(sigprestart), GENSYM(sigprestartb))
+  _SIG_PROVIDE_RESTART(sig_type, { might_signal_code; }, restart_type, { restart_action; }, GENSYM(sigprestart), GENSYM(sigprestartb))
 
 // Define a signal handler. Handler is removed at end of scope.
 #define SIG_AUTOPOP_HANDLER(sig_type, handler, userdata) \

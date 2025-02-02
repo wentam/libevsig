@@ -27,24 +27,24 @@ SIG_DEFTYPE(SIG_RESTART_MIDDLE);
 SIG_DEFTYPE(SIG_RESTART_TOP);
 
 void top_func() {
-  SIG_PROVIDE_RESTART(SIGNAL_FAIL, {
+  SIG_PROVIDE_RESTART(SIGNAL_FAIL, ({
     SIG_SEND(SIGNAL_FAIL, "something bad happened", NULL, NULL);
-  }, SIG_RESTART_TOP, {
+  }), SIG_RESTART_TOP, ({
     sw_fprintf(stderr, "RESTART_TOP\n");
     exit(1);
-  });
+  }));
 }
 
 void middle_func() {
   sw_fprintf(stderr, "pretending to ALLOCATE something\n");
   UNWIND_ACTION(unwind_handler_print, "pretending to FREE something\n");
 
-  SIG_PROVIDE_RESTART(SIGNAL_FAIL, {
+  SIG_PROVIDE_RESTART(SIGNAL_FAIL, ({
     top_func();
-  }, SIG_RESTART_MIDDLE, {
+  }), SIG_RESTART_MIDDLE, ({
     sw_fprintf(stderr, "RESTART_MIDDLE\n");
     exit(1);
-  });
+  }));
 }
 
 const char* fail_handler(const char* sig_type, void* userdata, char* msg, void* signal_data) {
@@ -57,12 +57,12 @@ int main() {
   {
     SIG_AUTOPOP_HANDLER(SIGNAL_FAIL, fail_handler, NULL);
 
-    SIG_PROVIDE_RESTART(SIGNAL_FAIL, {
+    SIG_PROVIDE_RESTART(SIGNAL_FAIL, ({
       middle_func();
-    }, SIG_RESTART_MAIN, {
+    }), SIG_RESTART_MAIN, ({
       sw_fprintf(stderr, "RESTART_MAIN\n");
       exit(1);
-    });
+    }));
   }
 
   sig_cleanup();
