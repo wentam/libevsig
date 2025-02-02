@@ -1,4 +1,4 @@
-Libevsig is an exception system, condition system, event-based programming framework, unwind mechanism, and resource cleanup mechanism for C built as a single, simple abstraction. Excluding wrappers the project is approximately just 350 lines.
+Libevsig is an exception system, condition system, event-based programming framework, unwind mechanism, and resource cleanup mechanism for C built as a single, simple abstraction. Excluding wrappers the project is approximately just 400 lines.
 
 While flexible, the principle purpose is error handling.
 

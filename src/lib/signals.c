@@ -120,7 +120,8 @@ void sig_cleanup() {
 static void _run_restart(const char* sig_type, const char* restart_type) {
   for (int64_t i = sig_restart_stack_fill-1; i >=0; i--) {
     sig_restart_stack_entry* e = sig_restart_stack+i;
-    if (e->restart_type == restart_type && e->sig_type == sig_type) {
+    if (e->restart_type == restart_type
+        && (e->sig_type == sig_type || e->sig_type == SIGNAL_ALL)) {
       UNWIND(e->p);
     }
   }
