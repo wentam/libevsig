@@ -20,6 +20,9 @@
 //      basically always OK to error and exit.
 // TODO document how setting RESTART_NULL doesn't consume, but anything else consumes the signal
 // TODO unit tests
+// TODO typedef sig_type and restart_type to const char*, use that everywhere?
+// TODO ability to check if a restart exists in a signal handler
+// TODO better names for SIG_AUTOPOP_HANDLER and SIG_PERSISTENT_HANDLER?
 
 // Signal type definitions
 //
@@ -74,10 +77,6 @@ SIG_DECLTYPE(SIGNAL_UNSUPPORTED);
 // Restart type definitions
 //
 // Works the same way as signal definitions above
-SIG_DECLTYPE(SIG_RESTART_CONTINUE);
-SIG_DECLTYPE(SIG_RESTART_RETURN);
-SIG_DECLTYPE(SIG_RESTART_EXIT);
-SIG_DECLTYPE(SIG_RESTART_UNWIND);
 SIG_DECLTYPE(SIG_RESTART_NULL);
 
 // Call PER THREAD to init the signal system and unwind system. Else undefined behavior
@@ -88,29 +87,23 @@ void sig_cleanup();
 
 typedef void (*sig_cleanup_func)(void* thing);
 
-// A restart is a signal handler's instructions on how to continue after handling a signal.
-typedef struct {
-  const char*      restart_type;
-  void*            restart_data;
-  sig_cleanup_func restart_data_cleanup;
-} sig_restart;
-
 // Signal handler function
-typedef sig_restart (*sig_handler)(const char* sig_type,
+typedef const char* (*sig_handler)(const char* sig_type,
                                    void* userdata,
                                    char* msg,
                                    void* signal_data);
 
 // Implementation details
 #include "_signals.h"
+#include "unwind.h"
 
 // Send a signal
-#define SIG_SEND(sig_type, msg, signal_data, signal_data_cleanup_func, your_restarts) \
-  _SIG_SEND(sig_type, msg, signal_data, signal_data_cleanup_func, your_restarts,GENSYM(sigsend)); \
+#define SIG_SEND(sig_type, msg, signal_data, signal_data_cleanup_func) \
+  _SIG_SEND(sig_type, msg, signal_data, signal_data_cleanup_func, GENSYM(sigsend)); \
 
-// To add your own restarts via your_restarts in SIG_SEND
-#define SIG_PROVIDE_RESTART(type, action) \
-  if (restart.restart_type == type) { action; }
+
+#define SIG_PROVIDE_RESTART(sig_type, might_signal_code, restart_type, restart_action) \
+  _SIG_PROVIDE_RESTART(sig_type, might_signal_code, restart_type, restart_action, GENSYM(sigprestart), GENSYM(sigprestartb))
 
 // Define a signal handler. Handler is removed at end of scope.
 #define SIG_AUTOPOP_HANDLER(sig_type, handler, userdata) \
@@ -123,10 +116,6 @@ typedef sig_restart (*sig_handler)(const char* sig_type,
 // Remove a signal handler by id returned from SIG_PERSISTENT_HANDLER
 #define SIG_RM_HANDLER(id) \
   _sig_rm_handler(id)
-
-// Classic TRY_CATCH convenience macro
-#define TRY_CATCH(try_code, sig_type, catch_code) \
-    _TRY_CATCH(try_code, sig_type, catch_code, GENSYM(trycatch));
 
 // Assert that a handler exists for a signal, useful to ensure important signals are handled
 #define SIG_ASSERT_HANDLER(sig_type) _sig_assert_handler(sig_type)

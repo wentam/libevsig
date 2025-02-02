@@ -23,6 +23,10 @@ thread_local sig_handler_stack_entry* sig_handler_stack;
 thread_local int64_t sig_handler_stack_alloc;
 thread_local int64_t sig_handler_stack_fill;
 
+thread_local sig_restart_stack_entry* sig_restart_stack;
+thread_local int64_t sig_restart_stack_alloc;
+thread_local int64_t sig_restart_stack_fill;
+
 SIG_DEFTYPE(SIGNAL_NOTHING);
 SIG_DEFTYPE(SIGNAL_ALL);
 SIG_DEFTYPE(SIGNAL_SUCCESS);
@@ -57,15 +61,9 @@ SIG_DEFTYPE(SIGNAL_NOT_SEEKABLE);
 SIG_DEFTYPE(SIGNAL_CORRUPT_DATA);
 SIG_DEFTYPE(SIGNAL_UNSUPPORTED);
 
-SIG_DEFTYPE(SIG_RESTART_CONTINUE);
-SIG_DEFTYPE(SIG_RESTART_RETURN);
-SIG_DEFTYPE(SIG_RESTART_EXIT);
-SIG_DEFTYPE(SIG_RESTART_UNWIND);
 SIG_DEFTYPE(SIG_RESTART_NULL);
 
-static uint32_t one = 1;
-
-static sig_restart catchall_handler(const char* sig_type, void* userdata, char* msg, void* signal_data) {
+static const char* catchall_handler(const char* sig_type, void* userdata, char* msg, void* signal_data) {
   sw_fprintf(stderr, CLR_BOLD "\n------------------------------\n" CLR_RESET, sig_type);
   sw_fprintf(stderr,
              "Unhandled signal of type %s\n" CLR_BOLD CLR_RED "%s" CLR_RESET "\n\n",
@@ -88,10 +86,9 @@ static sig_restart catchall_handler(const char* sig_type, void* userdata, char* 
 
   // Raise signal so GDB/the program stops
   raise(SIGINT);
+  exit(1);
 
-  return (sig_restart){ .restart_type = SIG_RESTART_EXIT,
-                        .restart_data = &one,
-                        .restart_data_cleanup = NULL};
+  return SIG_RESTART_NULL;
 }
 
 void sig_init() {
@@ -102,6 +99,15 @@ void sig_init() {
     fprintf(stderr, "Failed to allocate signal handler stack. Exiting.\n");
     exit(1);
   }
+
+  sig_restart_stack_alloc = 32;
+  sig_restart_stack_fill  = 0;
+  sig_restart_stack       = malloc(sizeof(sig_restart_stack_entry)*sig_restart_stack_alloc);
+  if (!sig_restart_stack) {
+    fprintf(stderr, "Failed to allocate restart stack. Exiting.\n");
+    exit(1);
+  }
+
   SIG_PERSISTENT_HANDLER(SIGNAL_ALL, catchall_handler, NULL);
   unwind_init();
 }
@@ -111,26 +117,76 @@ void sig_cleanup() {
   unwind_cleanup();
 }
 
-void _sig_free_restart(sig_restart* s) {
-  if (s->restart_data_cleanup) s->restart_data_cleanup(s->restart_data);
+static void _run_restart(const char* sig_type, const char* restart_type) {
+  for (int64_t i = sig_restart_stack_fill-1; i >=0; i--) {
+    sig_restart_stack_entry* e = sig_restart_stack+i;
+    if (e->restart_type == restart_type && e->sig_type == sig_type) {
+      UNWIND(e->p);
+    }
+  }
 }
 
-sig_restart _sig_send(const char* sig_type,
+void _sig_send(const char* sig_type,
                       char* msg,
                       void* signal_data,
                       sig_cleanup_func signal_data_cleanup_func) {
+
   for (int64_t i = sig_handler_stack_fill-1; i >= 0; i--) {
     sig_handler_stack_entry* e = sig_handler_stack+i;
     if (e->sig_type == sig_type || e->sig_type == SIGNAL_ALL) {
-      sig_restart r = e->handler(sig_type, e->handler_userdata, msg, signal_data);
+      const char* restart_type = e->handler(sig_type, e->handler_userdata, msg, signal_data);
       if (signal_data_cleanup_func) signal_data_cleanup_func(signal_data);
-      if (r.restart_type != SIG_RESTART_NULL) return r;
+      if (restart_type != SIG_RESTART_NULL) {
+        _run_restart(sig_type, restart_type);
+        fprintf(stderr, "Failed to run restart %s, exiting...\n", restart_type);
+        exit(1);
+      }
+    }
+  }
+}
+
+uint64_t _sig_push_restart(const char* sig_type, const char* restart_type, unwind_return_point* p) {
+  if (sig_restart_stack_fill+1 > sig_restart_stack_alloc) {
+    sig_restart_stack_alloc *= 2;
+    sig_restart_stack =
+      realloc(sig_restart_stack, sizeof(sig_restart_stack_entry)*sig_restart_stack_alloc);
+
+    if (!sig_restart_stack) {
+      fprintf(stderr, "Failed to realloc restart stack. Exiting.\n");
+      exit(1);
     }
   }
 
-  return (sig_restart){ .restart_type = SIG_RESTART_NULL,
-                        .restart_data = NULL,
-                        .restart_data_cleanup = NULL };
+  sig_restart_stack_entry e = {
+    .sig_type = sig_type,
+    .restart_type = restart_type,
+    .p = p,
+    .id = 0
+  };
+
+  if (sig_restart_stack_fill > 0) e.id = sig_restart_stack[sig_restart_stack_fill-1].id+1;
+  sig_restart_stack[sig_restart_stack_fill++] = e;
+
+  return e.id;
+}
+
+void _sig_rm_restart(uint64_t id) {
+  if (sig_restart_stack_fill <= 0) return;
+
+  int64_t found = -1;
+  for (int64_t i = sig_restart_stack_fill-1; i >= 0; i--) {
+    if (sig_restart_stack[i].id == id) {
+      found = i;
+      break;
+    }
+  }
+
+  if (found >= 0) {
+    for (int64_t i = found; i < sig_restart_stack_fill-1; i++) {
+      sig_restart_stack[i] = sig_restart_stack[i+1];
+    }
+    sig_restart_stack_fill--;
+  }
 }
 
 const uint64_t _sig_push_handler(const char* sig_type, sig_handler handler, void* userdata) {
@@ -188,7 +244,7 @@ void _sig_assert_handler(const char* sig_type) {
     char msg[1024];
     sprintf(msg, "Assertion failed: no signal handler for signal type %s\n", sig_type);
 
-    SIG_SEND(SIGNAL_NO_SIG_HANDLER, msg, NULL, NULL, {});
+    SIG_SEND(SIGNAL_NO_SIG_HANDLER, msg, NULL, NULL);
   }
 }
 
@@ -205,15 +261,14 @@ void _sig_assertwarn_handler(const char* sig_type) {
   }
 }
 
-void _unwind_handler_free_restart(void* r) { _sig_free_restart((sig_restart*)r); }
-
-sig_restart try_catch_handler(const char* sig_type, void* userdata, char* msg, void* signal_data) {
-  return (sig_restart){ .restart_type = SIG_RESTART_UNWIND,
-                        .restart_data = userdata,
-                        .restart_data_cleanup = NULL};
-}
-
 void _unwind_handler_sig_rm_handler(void* ptr) {
   uint64_t id = *((uint64_t*)ptr);
   _sig_rm_handler(id);
 }
+
+void _unwind_handler_sig_rm_restart(void* ptr) {
+  uint64_t id = *((uint64_t*)ptr);
+  _sig_rm_restart(id);
+}
+
+

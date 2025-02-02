@@ -6,34 +6,49 @@ To understand the value of this Common Lisp condition style design over simple e
 
 *NOTE: this project is experimental, do not expect a stable API or ABI*
 
-# Examples
+# Example
 
-Common Lisp style conditions
+The functions main, middle, and top all have provided restarts. Depending on what fail_handler
+returns, we can return to any of the those places in the stack providing a custom recovery for
+each.
+
+Also observe how if fail_handler return SIG_RESTART_MAIN, we pretend to free a resource even
+though the stack unwinds past it due to UNWIND_ACTION.
+
 ```C
 #include <stdio.h>
-#include "evsig/signals.h"
-#include "evsig/sigwrap.h"
-#include <stdint.h>
-#include <stdlib.h>
-#include "evsig/unwind.h"
+#include "lib/signals.h"
+#include "lib/sigwrap.h"
+#include "lib/unwind.h"
+#include "stdlib.h"
 
-void signal_func() {
-  SIG_SEND(SIGNAL_FAIL, "something bad happened", NULL, NULL, {});
+SIG_DEFTYPE(SIG_RESTART_MAIN);
+SIG_DEFTYPE(SIG_RESTART_MIDDLE);
+SIG_DEFTYPE(SIG_RESTART_TOP);
+
+void top_func() {
+  SIG_PROVIDE_RESTART(SIGNAL_FAIL, {
+    SIG_SEND(SIGNAL_FAIL, "something bad happened", NULL, NULL);
+  }, SIG_RESTART_TOP, {
+    fprintf(stderr, "RESTART_TOP\n");
+    exit(1);
+  });
 }
 
 void middle_func() {
   sw_fprintf(stderr, "pretending to ALLOCATE something\n");
   UNWIND_ACTION(unwind_handler_print, "pretending to FREE something\n");
-  signal_func();
+
+  SIG_PROVIDE_RESTART(SIGNAL_FAIL, {
+    top_func();
+  }, SIG_RESTART_MIDDLE, {
+    fprintf(stderr, "RESTART_MIDDLE\n");
+    exit(1);
+  });
 }
 
-sig_restart fail_handler(const char* sig_type, void* userdata, char* msg, void* signal_data) {
-  sw_fprintf(stderr, "handling, selecting RESTART_EXIT\n");
-  uint32_t* zero = sw_malloc(sizeof(uint32_t));
-  *zero = 0;
-  return (sig_restart){ .restart_type = SIG_RESTART_EXIT,
-                        .restart_data = zero,
-                        .restart_data_cleanup = free };
+const char* fail_handler(const char* sig_type, void* userdata, char* msg, void* signal_data) {
+  return SIG_RESTART_MAIN;
 }
 
 int main() {
@@ -41,41 +56,14 @@ int main() {
 
   {
     SIG_AUTOPOP_HANDLER(SIGNAL_FAIL, fail_handler, NULL);
-    middle_func();
+
+    SIG_PROVIDE_RESTART(SIGNAL_FAIL, {
+      middle_func();
+    }, SIG_RESTART_MAIN, {
+      fprintf(stderr, "RESTART_MAIN\n");
+      exit(1);
+    });
   }
-
-  sig_cleanup();
-  return 0;
-}
-
-```
-
-Exception-style usage (this is just a convenience wrapper around the CL-style usage)
-```C
-#include <stdio.h>
-#include "evsig/signals.h"
-#include "evsig/sigwrap.h"
-#include <stdlib.h>
-#include "evsig/unwind.h"
-
-void signal_func() {
-  SIG_SEND(SIGNAL_FAIL, "something bad happened", NULL, NULL, {});
-}
-
-void middle_func() {
-  sw_fprintf(stderr, "pretending to ALLOCATE something\n");
-  UNWIND_ACTION(unwind_handler_print, "pretending to FREE something\n");
-  signal_func();
-}
-
-int main() {
-  sig_init();
-
-  TRY_CATCH({
-    middle_func();
-  }, SIGNAL_FAIL, {
-    sw_fprintf(stderr, "catch!\n");
-  });
 
   sig_cleanup();
   return 0;
@@ -86,7 +74,7 @@ int main() {
 
 ## The signal system
 
-Signal handler functions are pushed onto a thread-local stack. When a signal is sent, handlers for that signal type are called, walking down the stack until one selects an approprate restart. Restarts - of which there are default and user-defined entries - describe how to continue execution after the signal. Unwinding the stack via RESTART_UNWIND is only one option - you may also instruct any other behavior, such as retrying an operation in the same stack frame/function that sent the signal.
+Signal handler functions are pushed onto a thread-local stack. When a signal is sent, handlers for that signal type are called, walking down the stack until one selects an approprate restart. Restarts - of which there are default and user-defined entries - describe a point to unwind to and error handling code to run when we unwind to that point ("catch" but to any stack frame).
 
 ## The unwind system
 
@@ -95,5 +83,3 @@ TODO
 # Api reference
 
 See the headers. Start at signals.h.
-
-

@@ -10,7 +10,7 @@
 void* sw_malloc(size_t size) {
   void* out = malloc(size);
 
-  if (!out) SIG_SEND(SIGNAL_ALLOC_FAILED, "Memory allocation failed", NULL, NULL, {});
+  if (!out) SIG_SEND(SIGNAL_ALLOC_FAILED, "Memory allocation failed", NULL, NULL);
 
   return out;
 }
@@ -18,7 +18,7 @@ void* sw_malloc(size_t size) {
 void* sw_realloc(void* ptr, size_t size) {
   void* out = realloc(ptr, size);
 
-  if (!out) SIG_SEND(SIGNAL_ALLOC_FAILED, "Memory allocation failed", NULL, NULL, {});
+  if (!out) SIG_SEND(SIGNAL_ALLOC_FAILED, "Memory allocation failed", NULL, NULL);
 
   return out;
 }
@@ -26,7 +26,7 @@ void* sw_realloc(void* ptr, size_t size) {
 void* sw_calloc(size_t nmemb, size_t size) {
   void* out = calloc(nmemb, size);
 
-  if (!out) SIG_SEND(SIGNAL_ALLOC_FAILED, "Memory allocation failed", NULL, NULL, {});
+  if (!out) SIG_SEND(SIGNAL_ALLOC_FAILED, "Memory allocation failed", NULL, NULL);
 
   return out;
 }
@@ -34,11 +34,11 @@ void* sw_calloc(size_t nmemb, size_t size) {
 size_t sw_fread(void* ptr, size_t size, size_t nmemb, FILE* stream) {
   // TODO implement/use sw_feof? sw_ferror below?
   if (!stream) {
-    SIG_SEND(SIGNAL_INVALID_INPUT, "fread: Can't read from NULL stream", NULL, NULL, {});
+    SIG_SEND(SIGNAL_INVALID_INPUT, "fread: Can't read from NULL stream", NULL, NULL);
     return -1;
   }
   if (feof(stream)) {
-    SIG_SEND(SIGNAL_EOF, "fread: Unexpected end of file (EOF)", NULL, NULL, {});
+    SIG_SEND(SIGNAL_EOF, "fread: Unexpected end of file (EOF)", NULL, NULL);
     return 0;
   }
 
@@ -60,7 +60,7 @@ size_t sw_fread(void* ptr, size_t size, size_t nmemb, FILE* stream) {
 
   if (out != nmemb && ferror(stream)) {
     SIG_SEND(SIGNAL_READ_ERROR, "fread error. explain_fread() might have more information.",
-             NULL, NULL, {});
+             NULL, NULL);
   }
 
   // TODO I don't think this is true, consider when size = 1
@@ -76,13 +76,13 @@ size_t sw_fread(void* ptr, size_t size, size_t nmemb, FILE* stream) {
 
 size_t sw_fwrite(void* ptr, size_t size, size_t nmemb, FILE* stream) {
   if (!stream) {
-    SIG_SEND(SIGNAL_INVALID_INPUT, "fwrite: Can't write to NULL stream", NULL, NULL, {});
+    SIG_SEND(SIGNAL_INVALID_INPUT, "fwrite: Can't write to NULL stream", NULL, NULL);
   }
 
   size_t out = fwrite(ptr, size, nmemb, stream);
 
   if (out != nmemb) {
-    SIG_SEND(SIGNAL_WRITE_ERROR, "fwrite error", NULL, NULL, {});
+    SIG_SEND(SIGNAL_WRITE_ERROR, "fwrite error", NULL, NULL);
   }
 
   return out;
@@ -97,82 +97,82 @@ FILE* sw_fopen(const char* pathname, const char* mode) {
   if (!out) {
     switch (errno) {
       case EACCES:
-        SIG_SEND(SIGNAL_PERMISSION_DENIED, "fopen: permission denied", NULL, NULL, {});
+        SIG_SEND(SIGNAL_PERMISSION_DENIED, "fopen: permission denied", NULL, NULL);
         break;
       case EEXIST:
-        SIG_SEND(SIGNAL_FILE_EXISTS, "fopen: file already exists", NULL, NULL, {});
+        SIG_SEND(SIGNAL_FILE_EXISTS, "fopen: file already exists", NULL, NULL);
         break;
       case EIO:
-        SIG_SEND(SIGNAL_IO_ERROR, "fopen: I/O error", NULL, NULL, {});
+        SIG_SEND(SIGNAL_IO_ERROR, "fopen: I/O error", NULL, NULL);
         break;
       case EINVAL:
-        SIG_SEND(SIGNAL_INVALID_INPUT, "fopen: invalid input", NULL, NULL, {});
+        SIG_SEND(SIGNAL_INVALID_INPUT, "fopen: invalid input", NULL, NULL);
         break;
       case EISDIR:
-        SIG_SEND(SIGNAL_IS_DIRECTORY, "fopen: is a directory", NULL, NULL, {});
+        SIG_SEND(SIGNAL_IS_DIRECTORY, "fopen: is a directory", NULL, NULL);
         break;
       case EMFILE:
-        SIG_SEND(SIGNAL_TOO_MANY_OPEN_FILES, "fopen: too many open files", NULL, NULL, {});
+        SIG_SEND(SIGNAL_TOO_MANY_OPEN_FILES, "fopen: too many open files", NULL, NULL);
         break;
       case ENOENT:
-        SIG_SEND(SIGNAL_NO_SUCH_FILE_OR_DIR, "fopen: no such file or directory", NULL, NULL, {});
+        SIG_SEND(SIGNAL_NO_SUCH_FILE_OR_DIR, "fopen: no such file or directory", NULL, NULL);
         break;
       case ENOMEM:
-        SIG_SEND(SIGNAL_NOT_ENOUGH_MEMORY, "fopen: not enough memory", NULL, NULL, {});
+        SIG_SEND(SIGNAL_NOT_ENOUGH_MEMORY, "fopen: not enough memory", NULL, NULL);
         break;
       case ENXIO:
-        SIG_SEND(SIGNAL_NO_SUCH_DEVICE, "fopen: no such device or address", NULL, NULL, {});
+        SIG_SEND(SIGNAL_NO_SUCH_DEVICE, "fopen: no such device or address", NULL, NULL);
         break;
       case EROFS:
-        SIG_SEND(SIGNAL_READ_ONLY_FS, "fopen: read only filesystem", NULL, NULL, {});
+        SIG_SEND(SIGNAL_READ_ONLY_FS, "fopen: read only filesystem", NULL, NULL);
         break;
       case EBADF:
-        SIG_SEND(SIGNAL_BAD_FILE_DESCRIPTOR, "fopen: bad file descriptor", NULL, NULL, {});
+        SIG_SEND(SIGNAL_BAD_FILE_DESCRIPTOR, "fopen: bad file descriptor", NULL, NULL);
         break;
       case EBUSY:
-        SIG_SEND(SIGNAL_BUSY, "fopen: busy / device in use", NULL, NULL, {});
+        SIG_SEND(SIGNAL_BUSY, "fopen: busy / device in use", NULL, NULL);
         break;
       case EDQUOT:
-        SIG_SEND(SIGNAL_NOT_ENOUGH_SPACE, "fopen: not enough space", NULL, NULL, {});
+        SIG_SEND(SIGNAL_NOT_ENOUGH_SPACE, "fopen: not enough space", NULL, NULL);
         break;
       case EFAULT:
-        SIG_SEND(SIGNAL_INVALID_INPUT, "fopen: pathname outside address space", NULL, NULL, {});
+        SIG_SEND(SIGNAL_INVALID_INPUT, "fopen: pathname outside address space", NULL, NULL);
         break;
       case EFBIG:
-        SIG_SEND(SIGNAL_FILE_TOO_BIG, "fopen: file too big", NULL, NULL, {});
+        SIG_SEND(SIGNAL_FILE_TOO_BIG, "fopen: file too big", NULL, NULL);
         break;
       case EINTR:
-        SIG_SEND(SIGNAL_INTERRUPTED, "fopen: interrupted by signal", NULL, NULL, {});
+        SIG_SEND(SIGNAL_INTERRUPTED, "fopen: interrupted by signal", NULL, NULL);
         break;
       case ELOOP:
-        SIG_SEND(SIGNAL_TOO_MANY_SYMLINKS, "fopen: too many symbolic links", NULL, NULL, {});
+        SIG_SEND(SIGNAL_TOO_MANY_SYMLINKS, "fopen: too many symbolic links", NULL, NULL);
         break;
       case ENAMETOOLONG:
-        SIG_SEND(SIGNAL_INVALID_INPUT, "fopen: pathname too long", NULL, NULL, {});
+        SIG_SEND(SIGNAL_INVALID_INPUT, "fopen: pathname too long", NULL, NULL);
         break;
       case ENFILE:
-        SIG_SEND(SIGNAL_TOO_MANY_OPEN_FILES, "fopen: too many open files", NULL, NULL, {});
+        SIG_SEND(SIGNAL_TOO_MANY_OPEN_FILES, "fopen: too many open files", NULL, NULL);
         break;
       case ENODEV:
-        SIG_SEND(SIGNAL_NO_SUCH_DEVICE, "fopen: no such device", NULL, NULL, {});
+        SIG_SEND(SIGNAL_NO_SUCH_DEVICE, "fopen: no such device", NULL, NULL);
         break;
       case ENOSPC:
-        SIG_SEND(SIGNAL_NOT_ENOUGH_SPACE, "fopen: not enough space", NULL, NULL, {});
+        SIG_SEND(SIGNAL_NOT_ENOUGH_SPACE, "fopen: not enough space", NULL, NULL);
         break;
       case ENOTDIR:
-        SIG_SEND(SIGNAL_IS_NOT_DIRECTORY, "fopen: not a directory", NULL, NULL, {});
+        SIG_SEND(SIGNAL_IS_NOT_DIRECTORY, "fopen: not a directory", NULL, NULL);
         break;
       case EOPNOTSUPP:
-        SIG_SEND(SIGNAL_UNSUPPORTED_OP, "fopen: unsupported operation", NULL, NULL, {});
+        SIG_SEND(SIGNAL_UNSUPPORTED_OP, "fopen: unsupported operation", NULL, NULL);
         break;
       case EOVERFLOW:
-        SIG_SEND(SIGNAL_FILE_TOO_BIG, "fopen: file too big", NULL, NULL, {});
+        SIG_SEND(SIGNAL_FILE_TOO_BIG, "fopen: file too big", NULL, NULL);
         break;
       case EPERM:
-        SIG_SEND(SIGNAL_PERMISSION_DENIED, "fopen: permission denied", NULL, NULL, {});
+        SIG_SEND(SIGNAL_PERMISSION_DENIED, "fopen: permission denied", NULL, NULL);
         break;
       default:
-        SIG_SEND(SIGNAL_UNKNOWN_ERROR, "fopen: unknown error", NULL, NULL, {});
+        SIG_SEND(SIGNAL_UNKNOWN_ERROR, "fopen: unknown error", NULL, NULL);
     }
   }
 
@@ -185,37 +185,37 @@ int sw_fclose(FILE* stream) {
   if (out) {
     switch(errno) {
       case EBADF:
-        SIG_SEND(SIGNAL_BAD_FILE_DESCRIPTOR, "fclose: bad file descriptor", NULL, NULL, {});
+        SIG_SEND(SIGNAL_BAD_FILE_DESCRIPTOR, "fclose: bad file descriptor", NULL, NULL);
         break;
       case EINTR:
-        SIG_SEND(SIGNAL_INTERRUPTED, "fclose: interrupted by signal", NULL, NULL, {});
+        SIG_SEND(SIGNAL_INTERRUPTED, "fclose: interrupted by signal", NULL, NULL);
         break;
       case EIO:
-        SIG_SEND(SIGNAL_IO_ERROR, "fclose: I/O error", NULL, NULL, {});
+        SIG_SEND(SIGNAL_IO_ERROR, "fclose: I/O error", NULL, NULL);
         break;
       case ENOSPC:
-        SIG_SEND(SIGNAL_NOT_ENOUGH_SPACE, "fclose: not enough space", NULL, NULL, {});
+        SIG_SEND(SIGNAL_NOT_ENOUGH_SPACE, "fclose: not enough space", NULL, NULL);
         break;
       case EDQUOT:
-        SIG_SEND(SIGNAL_NOT_ENOUGH_SPACE, "fclose: not enough space", NULL, NULL, {});
+        SIG_SEND(SIGNAL_NOT_ENOUGH_SPACE, "fclose: not enough space", NULL, NULL);
         break;
       case EAGAIN:
-        SIG_SEND(SIGNAL_WOULD_BLOCK, "fclose: would block", NULL, NULL, {});
+        SIG_SEND(SIGNAL_WOULD_BLOCK, "fclose: would block", NULL, NULL);
         break;
       case EFAULT:
-        SIG_SEND(SIGNAL_INVALID_INPUT, "fclose: buf outside address space", NULL, NULL, {});
+        SIG_SEND(SIGNAL_INVALID_INPUT, "fclose: buf outside address space", NULL, NULL);
         break;
       case EFBIG:
-        SIG_SEND(SIGNAL_FILE_TOO_BIG, "fclose: file too big", NULL, NULL, {});
+        SIG_SEND(SIGNAL_FILE_TOO_BIG, "fclose: file too big", NULL, NULL);
         break;
       case EINVAL:
-        SIG_SEND(SIGNAL_INVALID_INPUT, "fclose: invalid input", NULL, NULL, {});
+        SIG_SEND(SIGNAL_INVALID_INPUT, "fclose: invalid input", NULL, NULL);
         break;
       case EPERM:
-        SIG_SEND(SIGNAL_PERMISSION_DENIED, "fclose: permission denied", NULL, NULL, {});
+        SIG_SEND(SIGNAL_PERMISSION_DENIED, "fclose: permission denied", NULL, NULL);
         break;
       default:
-        SIG_SEND(SIGNAL_UNKNOWN_ERROR, "fclose: unknown error", NULL, NULL, {});
+        SIG_SEND(SIGNAL_UNKNOWN_ERROR, "fclose: unknown error", NULL, NULL);
     }
   }
 
@@ -228,37 +228,37 @@ int sw_fflush(FILE* stream) {
   if (out) {
     switch(errno) {
       case EBADF:
-        SIG_SEND(SIGNAL_BAD_FILE_DESCRIPTOR, "fflush: bad file descriptor", NULL, NULL, {});
+        SIG_SEND(SIGNAL_BAD_FILE_DESCRIPTOR, "fflush: bad file descriptor", NULL, NULL);
         break;
       case EINTR:
-        SIG_SEND(SIGNAL_INTERRUPTED, "fflush: interrupted by signal", NULL, NULL, {});
+        SIG_SEND(SIGNAL_INTERRUPTED, "fflush: interrupted by signal", NULL, NULL);
         break;
       case EIO:
-        SIG_SEND(SIGNAL_IO_ERROR, "fflush: I/O error", NULL, NULL, {});
+        SIG_SEND(SIGNAL_IO_ERROR, "fflush: I/O error", NULL, NULL);
         break;
       case ENOSPC:
-        SIG_SEND(SIGNAL_NOT_ENOUGH_SPACE, "fflush: not enough space", NULL, NULL, {});
+        SIG_SEND(SIGNAL_NOT_ENOUGH_SPACE, "fflush: not enough space", NULL, NULL);
         break;
       case EDQUOT:
-        SIG_SEND(SIGNAL_NOT_ENOUGH_SPACE, "fflush: not enough space", NULL, NULL, {});
+        SIG_SEND(SIGNAL_NOT_ENOUGH_SPACE, "fflush: not enough space", NULL, NULL);
         break;
       case EAGAIN:
-        SIG_SEND(SIGNAL_WOULD_BLOCK, "fflush: would block", NULL, NULL, {});
+        SIG_SEND(SIGNAL_WOULD_BLOCK, "fflush: would block", NULL, NULL);
         break;
       case EFAULT:
-        SIG_SEND(SIGNAL_INVALID_INPUT, "fflush: buf outside address space", NULL, NULL, {});
+        SIG_SEND(SIGNAL_INVALID_INPUT, "fflush: buf outside address space", NULL, NULL);
         break;
       case EFBIG:
-        SIG_SEND(SIGNAL_FILE_TOO_BIG, "fflush: file too big", NULL, NULL, {});
+        SIG_SEND(SIGNAL_FILE_TOO_BIG, "fflush: file too big", NULL, NULL);
         break;
       case EINVAL:
-        SIG_SEND(SIGNAL_INVALID_INPUT, "fflush: invalid input", NULL, NULL, {});
+        SIG_SEND(SIGNAL_INVALID_INPUT, "fflush: invalid input", NULL, NULL);
         break;
       case EPERM:
-        SIG_SEND(SIGNAL_PERMISSION_DENIED, "fflush: permission denied", NULL, NULL, {});
+        SIG_SEND(SIGNAL_PERMISSION_DENIED, "fflush: permission denied", NULL, NULL);
         break;
       default:
-        SIG_SEND(SIGNAL_UNKNOWN_ERROR, "fflush: unknown error", NULL, NULL, {});
+        SIG_SEND(SIGNAL_UNKNOWN_ERROR, "fflush: unknown error", NULL, NULL);
     }
   }
 
@@ -267,7 +267,7 @@ int sw_fflush(FILE* stream) {
 
 int sw_fseek(FILE* stream, long offset, int whence) {
   if (!stream) {
-    SIG_SEND(SIGNAL_INVALID_INPUT, "fseek: Can't seek NULL stream", NULL, NULL, {});
+    SIG_SEND(SIGNAL_INVALID_INPUT, "fseek: Can't seek NULL stream", NULL, NULL);
   }
 
   int out = fseek(stream, offset, whence);
@@ -275,40 +275,40 @@ int sw_fseek(FILE* stream, long offset, int whence) {
   if (out == -1) {
     switch (errno) {
       case EINVAL:
-        SIG_SEND(SIGNAL_INVALID_INPUT, "fseek: invalid argument(s)", NULL, NULL, {});
+        SIG_SEND(SIGNAL_INVALID_INPUT, "fseek: invalid argument(s)", NULL, NULL);
         break;
       case ESPIPE:
-        SIG_SEND(SIGNAL_NOT_SEEKABLE, "fseek: stream is not seekable", NULL, NULL, {});
+        SIG_SEND(SIGNAL_NOT_SEEKABLE, "fseek: stream is not seekable", NULL, NULL);
         break;
       case EBADF:
-        SIG_SEND(SIGNAL_BAD_FILE_DESCRIPTOR, "fseek: bad file descriptor", NULL, NULL, {});
+        SIG_SEND(SIGNAL_BAD_FILE_DESCRIPTOR, "fseek: bad file descriptor", NULL, NULL);
         break;
       case EINTR:
-        SIG_SEND(SIGNAL_INTERRUPTED, "fseek: interrupted by signal", NULL, NULL, {});
+        SIG_SEND(SIGNAL_INTERRUPTED, "fseek: interrupted by signal", NULL, NULL);
         break;
       case EIO:
-        SIG_SEND(SIGNAL_IO_ERROR, "fseek: I/O error", NULL, NULL, {});
+        SIG_SEND(SIGNAL_IO_ERROR, "fseek: I/O error", NULL, NULL);
         break;
       case ENOSPC:
-        SIG_SEND(SIGNAL_NOT_ENOUGH_SPACE, "fseek: not enough space", NULL, NULL, {});
+        SIG_SEND(SIGNAL_NOT_ENOUGH_SPACE, "fseek: not enough space", NULL, NULL);
         break;
       case EDQUOT:
-        SIG_SEND(SIGNAL_NOT_ENOUGH_SPACE, "fseek: not enough space", NULL, NULL, {});
+        SIG_SEND(SIGNAL_NOT_ENOUGH_SPACE, "fseek: not enough space", NULL, NULL);
         break;
       case EAGAIN:
-        SIG_SEND(SIGNAL_WOULD_BLOCK, "fseek: would block", NULL, NULL, {});
+        SIG_SEND(SIGNAL_WOULD_BLOCK, "fseek: would block", NULL, NULL);
         break;
       case EFAULT:
-        SIG_SEND(SIGNAL_INVALID_INPUT, "fseek: buf outside address space", NULL, NULL, {});
+        SIG_SEND(SIGNAL_INVALID_INPUT, "fseek: buf outside address space", NULL, NULL);
         break;
       case EFBIG:
-        SIG_SEND(SIGNAL_FILE_TOO_BIG, "fseek: file too big", NULL, NULL, {});
+        SIG_SEND(SIGNAL_FILE_TOO_BIG, "fseek: file too big", NULL, NULL);
         break;
       case EPERM:
-        SIG_SEND(SIGNAL_PERMISSION_DENIED, "fseek: permission denied", NULL, NULL, {});
+        SIG_SEND(SIGNAL_PERMISSION_DENIED, "fseek: permission denied", NULL, NULL);
         break;
       default:
-        SIG_SEND(SIGNAL_UNKNOWN_ERROR, "fseek: unknown error", NULL, NULL, {});
+        SIG_SEND(SIGNAL_UNKNOWN_ERROR, "fseek: unknown error", NULL, NULL);
     }
   }
 
@@ -324,7 +324,7 @@ int sw_printf(const char* format, ...) {
   // printf documentation doesn't specify any errno values. All we know is if it failed.
 
   if (out < 0) {
-    SIG_SEND(SIGNAL_FAIL, "printf failed", NULL, NULL, {});
+    SIG_SEND(SIGNAL_FAIL, "printf failed", NULL, NULL);
   }
 
   return out;
@@ -339,7 +339,7 @@ int sw_fprintf(FILE* stream, const char* format, ...) {
   // printf documentation doesn't specify any errno values. All we know is if it failed.
 
   if (out < 0) {
-    SIG_SEND(SIGNAL_FAIL, "fprintf failed", NULL, NULL, { });
+    SIG_SEND(SIGNAL_FAIL, "fprintf failed", NULL, NULL);
   }
 
   return out;
