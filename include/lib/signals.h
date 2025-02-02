@@ -12,9 +12,6 @@
 //      Document how the user could mask the default catchall SIGNAL_ALL handler by defining their
 //      own.
 //
-// TODO document try/catch style usage w/ example
-// TODO document normal non-unwind usage w/ example
-// TODO document default restarts
 // TODO document how to define custom restarts
 // TODO document best practices, such as always asserting signals have a handler unless it's
 //      basically always OK to error and exit.
@@ -23,6 +20,8 @@
 // TODO typedef sig_type and restart_type to const char*, use that everywhere?
 // TODO ability to check if a restart exists in a signal handler
 // TODO better names for SIG_AUTOPOP_HANDLER and SIG_PERSISTENT_HANDLER?
+// TODO some way to provide multiple restarts for a piece of code without needing to nest
+//      SIG_PROVIDE_RESTART inside eachother? Variable length args?
 
 // Signal type definitions
 //
