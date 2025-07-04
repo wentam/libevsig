@@ -1,3 +1,4 @@
+#define _GNU_SOURCE // Needed for dladdr()
 #include "lib/signals.h"
 #include <execinfo.h>
 #include <signal.h>
@@ -9,6 +10,8 @@
 #include <stdint.h>
 #include "lib/_signals.h"
 #include "lib/unwind.h"
+#include <string.h>
+#include <dlfcn.h>
 
 #define CLR_RED     "\x1b[31m"
 #define CLR_GREEN   "\x1b[32m"
@@ -63,6 +66,14 @@ SIG_DEFTYPE(SIGNAL_UNSUPPORTED);
 
 SIG_DEFTYPE(SIG_RESTART_NULL);
 
+#define MAX_FRAMES 64
+
+typedef struct {
+    void* addr;
+    char func[256];
+    char lib[256];
+} frame_info;
+
 static const char* catchall_handler(const char* sig_type, void* userdata, char* msg, void* signal_data) {
   sw_fprintf(stderr, CLR_BOLD "\n------------------------------\n" CLR_RESET, sig_type);
   sw_fprintf(stderr,
@@ -70,16 +81,69 @@ static const char* catchall_handler(const char* sig_type, void* userdata, char* 
              sig_type, msg);
 
   // Print backtrace
-  void *buffer[1024];
-  int nptrs = backtrace(buffer, 1024);
-  char **strings = backtrace_symbols(buffer, nptrs);
+  void *_addrs[1024];
+  int nptrs = backtrace(_addrs, 1024);
+  //char **strings = backtrace_symbols(buffer, nptrs);
 
-  sw_fprintf(stderr, "Backtrace:\n");
-  for (int i = 0; i < nptrs; i++) {
-    sw_fprintf(stderr, "  %s\n", strings[i]);
+  void* start_addr = __builtin_return_address(0);
+
+  uint64_t start = 0;
+
+  if (start_addr) {
+    for (uint64_t i = 0; i < nptrs; i++) {
+      if (_addrs[i] == start_addr) {
+        start = i+1;
+        break;
+      }
+    }
   }
 
-  free(strings);
+  void** addrs = _addrs;
+  addrs += start;
+  nptrs -= start;
+
+  frame_info frames[MAX_FRAMES];
+  int max_func = 0, max_lib = 0;
+
+  for (int i = 0; i < nptrs; i++) {
+    frames[i].addr = addrs[i];
+
+    Dl_info info;
+    const char* fname = "???";
+    const char* libname = "???";
+
+    if (dladdr(addrs[i], &info)) {
+      if (info.dli_sname) fname = info.dli_sname;
+      if (info.dli_fname) libname = info.dli_fname;
+    }
+
+    snprintf(frames[i].func, sizeof(frames[i].func), "%s", fname);
+    snprintf(frames[i].lib, sizeof(frames[i].lib), "%s", libname);
+
+    int flen = strlen(frames[i].func);
+    int llen = strlen(frames[i].lib);
+    if (flen > max_func) max_func = flen;
+    if (llen > max_lib) max_lib = llen;
+  }
+
+  sw_fprintf(stderr, "Backtrace:\n");
+
+  sw_fprintf(stderr, "%-2s  %-18s  %-*s  %-*s\n", "#", "Address", max_func, "Function", max_lib, "File");
+
+  for (int i = 0; i < nptrs; i++) {
+    sw_fprintf(stderr, "%-2d  %-18p  %-*s  %-*s\n",
+               i, frames[i].addr,
+               max_func, frames[i].func,
+               max_lib, frames[i].lib
+               );
+  }
+
+  //sw_fprintf(stderr, "Backtrace:\n");
+  //for (int i = 0; i < nptrs; i++) {
+  //  sw_fprintf(stderr, "  %s\n", strings[i]);
+  //}
+
+  //free(strings);
 
   sw_fprintf(stderr, "\nRaising SIGINT (this should stop debuggers/the program)\n", sig_type);
   sw_fprintf(stderr, CLR_BOLD "------------------------------\n" CLR_RESET, sig_type);

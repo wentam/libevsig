@@ -6,6 +6,8 @@ To understand the value of this Common Lisp condition style design over simple e
 
 *NOTE: this project is experimental, do not expect a stable API or ABI*
 
+Use -rdynamic at link time to get function names to work in backtraces.
+
 # Example
 
 The functions main, middle, and top all have provided restarts. Depending on what fail_handler

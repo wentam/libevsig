@@ -52,10 +52,10 @@ build/cli/:
 	mkdir -p build/cli
 
 build/lib/libevsig.so: build/lib/ $(OBJS)
-	$(CC) $(CFLAGS) -lm -shared -o $@ $(OBJS)
+	$(CC) $(CFLAGS) -rdynamic -lm -shared -o $@ $(OBJS)
 
 build/cli/evsig-cli: build/cli/ $(CLI_OBJS) build/lib/libevsig.so
-	$(CC) $(CFLAGS) -Lbuild/lib/ -levsig -o $@ $(CLI_OBJS)
+	$(CC) $(CFLAGS) -Lbuild/lib/ -levsig -rdynamic -o $@ $(CLI_OBJS)
 
 -include $(DEPS)
 -include $(CLI_DEPS)
