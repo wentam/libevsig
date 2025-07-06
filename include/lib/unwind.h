@@ -31,6 +31,7 @@ void unwind_cleanup(); // Call when done using unwind system
 void _unwind(unwind_return_point* p);
 void _unwind_action(on_unwind_handler h, void* userdata);
 void unwind_run_handler(unwind_handler_stack_entry* e);
+void unwind_run_all_handlers();
 void unwind_handler_free(void* ptr);
 void unwind_handler_fclose(void* file);
 void unwind_handler_print(void* str);

@@ -71,6 +71,14 @@ void unwind_run_handler(unwind_handler_stack_entry* e) {
   //sw_fprintf(stderr, "[-] stack size: %ld\n", unwind_stack.element_count);
 }
 
+void unwind_run_all_handlers() {
+  while (unwind_stack_fill > 0) {
+    unwind_handler_stack_entry* e = unwind_stack+(unwind_stack_fill-1);
+    e->h(e->userdata);
+    unwind_stack_fill--;
+  }
+}
+
 void unwind_handler_print(void* ptr) { sw_fprintf(stderr, "%s", ptr); }
 void unwind_handler_free(void* ptr) { free(ptr); }
 void unwind_handler_fclose(void* file) { if(file) sw_fclose((FILE*)file); }

@@ -148,6 +148,9 @@ static const char* catchall_handler(const char* sig_type, void* userdata, char* 
   sw_fprintf(stderr, "\nRaising SIGINT (this should stop debuggers/the program)\n", sig_type);
   sw_fprintf(stderr, CLR_BOLD "------------------------------\n" CLR_RESET, sig_type);
 
+  // Run all unwind handlers because we're not actually unwinding
+  unwind_run_all_handlers();
+
   // Raise signal so GDB/the program stops
   raise(SIGINT);
   exit(1);
