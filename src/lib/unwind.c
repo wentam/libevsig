@@ -28,10 +28,16 @@ static struct sigaction prev_sigabrt;
 static struct sigaction prev_sigfpe;
 
 void _runprev(struct sigaction* a, int sig) {
-  if ( a->sa_handler
-    && a->sa_handler != SIG_DFL
-    && a->sa_handler != SIG_IGN) {
-    a->sa_handler(sig);
+  if (!a) return;
+
+  if (a->sa_flags & SA_SIGINFO) {
+    if (a->sa_sigaction && a->sa_sigaction != (void*)SIG_IGN && a->sa_sigaction != (void*)SIG_DFL) {
+      a->sa_sigaction(sig, NULL, NULL);
+    }
+  } else {
+    if (a->sa_handler && a->sa_handler != SIG_IGN && a->sa_handler != SIG_DFL) {
+      a->sa_handler(sig);
+    }
   }
 }
 
