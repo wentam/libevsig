@@ -71,6 +71,16 @@ void unwind_run_handler(unwind_handler_stack_entry* e) {
   //sw_fprintf(stderr, "[-] stack size: %ld\n", unwind_stack.element_count);
 }
 
+void unwind_rm_handler(unwind_handler_stack_entry* e) {
+  unwind_stack_fill--;
+
+  // TODO: we can't assume we just removed the last element with this function design
+  //       unless we make this a unwind_rm_handler_pop with no args
+
+  //sw_fprintf(stderr, "[-] stack size: %ld\n", unwind_stack.element_count);
+}
+
+
 void unwind_run_all_handlers() {
   while (unwind_stack_fill > 0) {
     unwind_handler_stack_entry* e = unwind_stack+(unwind_stack_fill-1);

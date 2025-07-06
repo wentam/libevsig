@@ -30,7 +30,8 @@ void unwind_cleanup(); // Call when done using unwind system
 
 void _unwind(unwind_return_point* p);
 void _unwind_action(on_unwind_handler h, void* userdata);
-void unwind_run_handler(unwind_handler_stack_entry* e);
+void unwind_run_handler(unwind_handler_stack_entry* e); // TODO only works with last one
+void unwind_rm_handler(unwind_handler_stack_entry* e); // TODO only works with last one
 void unwind_run_all_handlers();
 void unwind_handler_free(void* ptr);
 void unwind_handler_fclose(void* file);
@@ -41,6 +42,14 @@ void unwind_handler_print(void* str);
 #define UNWIND_ACTION(handler, _userdata) \
   _unwind_action(handler, _userdata); \
   __attribute__((__cleanup__(unwind_run_handler))) \
+  unwind_handler_stack_entry GENSYM(unwind_action) = { .h = handler, .userdata = _userdata };
+
+// This action only runs on a signal or explicit unwind. Under normal code flow, does not
+// trigger. Useful in constructors where you intend to return something you allocate,
+// but need to clean up on error.
+#define EXPLICIT_UNWIND_ACTION(handler, _userdata) \
+  _unwind_action(handler, _userdata); \
+  __attribute__((__cleanup__(unwind_rm_handler))) \
   unwind_handler_stack_entry GENSYM(unwind_action) = { .h = handler, .userdata = _userdata };
 
 #define UNWIND_RETURN_POINT(p, code_that_might_unwind, handle_unwind_code) \
