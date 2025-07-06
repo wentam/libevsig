@@ -44,26 +44,26 @@ void _runprev(struct sigaction* a, int sig) {
 void _sighandle(int sig) {
   unwind_run_all_handlers();
 
-  struct sigaction* a = NULL;
+  //struct sigaction* a = NULL;
 
-  switch (sig) {
-    case SIGTERM: a = &prev_sigterm; break;
-    case SIGINT:  a = &prev_sigint;  break;
-    case SIGSEGV: a = &prev_sigsegv; break;
-    case SIGHUP:  a = &prev_sighup;  break;
-    case SIGQUIT: a = &prev_sigquit; break;
-    case SIGILL:  a = &prev_sigill;  break;
-    case SIGPIPE: a = &prev_sigpipe; break;
-    case SIGALRM: a = &prev_sigalrm; break;
-    case SIGBUS:  a = &prev_sigbus;  break;
-    case SIGSYS:  a = &prev_sigsys;  break;
-    case SIGSTKFLT: a = &prev_sigstkflt; break;
-    case SIGABRT: a = &prev_sigabrt; break;
-    case SIGFPE:  a = &prev_sigfpe; break;
-    default: break;
-  }
+  //switch (sig) {
+  //  case SIGTERM: a = &prev_sigterm; break;
+  //  case SIGINT:  a = &prev_sigint;  break;
+  //  case SIGSEGV: a = &prev_sigsegv; break;
+  //  case SIGHUP:  a = &prev_sighup;  break;
+  //  case SIGQUIT: a = &prev_sigquit; break;
+  //  case SIGILL:  a = &prev_sigill;  break;
+  //  case SIGPIPE: a = &prev_sigpipe; break;
+  //  case SIGALRM: a = &prev_sigalrm; break;
+  //  case SIGBUS:  a = &prev_sigbus;  break;
+  //  case SIGSYS:  a = &prev_sigsys;  break;
+  //  case SIGSTKFLT: a = &prev_sigstkflt; break;
+  //  case SIGABRT: a = &prev_sigabrt; break;
+  //  case SIGFPE:  a = &prev_sigfpe; break;
+  //  default: break;
+  //}
 
-  if (a) _runprev(a, sig);
+  //if (a) _runprev(a, sig);
 
   _exit(1);
 }
