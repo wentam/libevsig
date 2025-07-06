@@ -6,6 +6,7 @@
 #include "threads.h"
 #include <signal.h>
 #include <unistd.h>
+#include <string.h>
 
 thread_local unwind_handler_stack_entry* unwind_stack;
 thread_local uint64_t unwind_stack_alloc;
@@ -36,19 +37,28 @@ void _runprev(struct sigaction* a, int sig) {
 
 void _sighandle(int sig) {
   unwind_run_all_handlers();
-  _runprev(&prev_sigterm, sig);
-  _runprev(&prev_sigint, sig);
-  _runprev(&prev_sigsegv, sig);
-  _runprev(&prev_sighup, sig);
-  _runprev(&prev_sigquit, sig);
-  _runprev(&prev_sigill, sig);
-  _runprev(&prev_sigpipe, sig);
-  _runprev(&prev_sigalrm, sig);
-  _runprev(&prev_sigbus, sig);
-  _runprev(&prev_sigsys, sig);
-  _runprev(&prev_sigstkflt, sig);
-  _runprev(&prev_sigabrt, sig);
-  _runprev(&prev_sigfpe, sig);
+
+  struct sigaction* a = NULL;
+
+  switch (sig) {
+    case SIGTERM: a = &prev_sigterm; break;
+    case SIGINT:  a = &prev_sigint;  break;
+    case SIGSEGV: a = &prev_sigsegv; break;
+    case SIGHUP:  a = &prev_sighup;  break;
+    case SIGQUIT: a = &prev_sigquit; break;
+    case SIGILL:  a = &prev_sigill;  break;
+    case SIGPIPE: a = &prev_sigpipe; break;
+    case SIGALRM: a = &prev_sigalrm; break;
+    case SIGBUS:  a = &prev_sigbus;  break;
+    case SIGSYS:  a = &prev_sigsys;  break;
+    case SIGSTKFLT: a = &prev_sigstkflt; break;
+    case SIGABRT: a = &prev_sigabrt; break;
+    case SIGFPE:  a = &prev_sigfpe; break;
+    default: break;
+  }
+
+  if (a) _runprev(a, sig);
+
   _exit(1);
 }
 
@@ -68,19 +78,45 @@ void unwind_init() {
   sigemptyset(&sa.sa_mask);
   sa.sa_flags = 0;
 
-  sigaction(SIGTERM, NULL, &prev_sigterm); // Save
-  sigaction(SIGINT,  NULL, &prev_sigint); // Save
-  sigaction(SIGSEGV, NULL, &prev_sigsegv); // Save
-  sigaction(SIGHUP, NULL, &prev_sighup); // Save
-  sigaction(SIGQUIT, NULL, &prev_sigquit); // Save
-  sigaction(SIGILL, NULL, &prev_sigill); // Save
-  sigaction(SIGPIPE, NULL, &prev_sigpipe); // Save
-  sigaction(SIGALRM, NULL, &prev_sigalrm); // Save
-  sigaction(SIGBUS, NULL, &prev_sigbus); // Save
-  sigaction(SIGSYS, NULL, &prev_sigsys); // Save
-  sigaction(SIGSTKFLT, NULL, &prev_sigstkflt); // Save
-  sigaction(SIGABRT, NULL, &prev_sigabrt); // Save
-  sigaction(SIGFPE, NULL, &prev_sigfpe); // Save
+  if (sigaction(SIGTERM, NULL, &prev_sigterm) != 0) {
+    memset(&prev_sigterm, 0, sizeof(prev_sigterm));
+  }
+  if (sigaction(SIGINT,  NULL, &prev_sigint) != 0) {
+    memset(&prev_sigint, 0, sizeof(prev_sigint));
+  }
+  if (sigaction(SIGSEGV, NULL, &prev_sigsegv) != 0) {
+    memset(&prev_sigsegv, 0, sizeof(prev_sigsegv));
+  }
+  if (sigaction(SIGHUP, NULL, &prev_sighup) != 0) {
+    memset(&prev_sighup, 0, sizeof(prev_sighup));
+  }
+  if (sigaction(SIGQUIT, NULL, &prev_sigquit) != 0) {
+    memset(&prev_sigquit, 0, sizeof(prev_sigquit));
+  }
+  if (sigaction(SIGILL, NULL, &prev_sigill) != 0) {
+    memset(&prev_sigill, 0, sizeof(prev_sigill));
+  }
+  if (sigaction(SIGPIPE, NULL, &prev_sigpipe) != 0) {
+    memset(&prev_sigpipe, 0, sizeof(prev_sigpipe));
+  }
+  if (sigaction(SIGALRM, NULL, &prev_sigalrm) != 0) {
+    memset(&prev_sigalrm, 0, sizeof(prev_sigalrm));
+  }
+  if (sigaction(SIGBUS, NULL, &prev_sigbus) != 0) {
+    memset(&prev_sigbus, 0, sizeof(prev_sigbus));
+  }
+  if (sigaction(SIGSYS, NULL, &prev_sigsys) != 0) {
+    memset(&prev_sigsys, 0, sizeof(prev_sigsys));
+  }
+  if (sigaction(SIGSTKFLT, NULL, &prev_sigstkflt) != 0) {
+    memset(&prev_sigstkflt, 0, sizeof(prev_sigstkflt));
+  };
+  if (sigaction(SIGABRT, NULL, &prev_sigabrt) != 0) {
+    memset(&prev_sigabrt, 0, sizeof(prev_sigabrt));
+  }
+  if (sigaction(SIGFPE, NULL, &prev_sigfpe) != 0) {
+    memset(&prev_sigfpe, 0, sizeof(prev_sigfpe));
+  }
 
   sigaction(SIGTERM, &sa, NULL); // Set
   sigaction(SIGINT,  &sa, NULL); // Set
