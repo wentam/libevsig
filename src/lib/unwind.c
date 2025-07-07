@@ -90,11 +90,11 @@ static void _sighandle_usr(int sig) {
 // For SIGTERM SIGINT etc to dispatch SIGUSR2 to our threads
 static void _sighandle_dispatch(int sig) {
   unwind_dispatch_all();
-  unwind_run_all_handlers();
   //free(threadlist);
   for (uint64_t i = 0; i < threadlist_count; i++) {
     pthread_join(threadlist[i], NULL);
   }
+  pthread_exit(NULL);
   exit(1);
 }
 
