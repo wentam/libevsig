@@ -78,6 +78,9 @@ static void _sighandle_usr(int sig) {
 static void _sighandle_dispatch(int sig) {
   unwind_dispatch_all();
   //free(threadlist);
+  for (uint64_t i = 0; i < threadlist_count; i++) {
+    pthread_join(threadlist[i], NULL);
+  }
   exit(1);
 }
 
