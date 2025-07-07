@@ -6,7 +6,10 @@ To understand the value of this Common Lisp condition style design over simple e
 
 *NOTE: this project is experimental, do not expect a stable API or ABI*
 
-Use -rdynamic at link time to get function names to work in backtraces.
+IMPORTANT:
+* We comandeer SIGUSR2 to handle calling your unwind actions on SIGTERM/SIGINT etc. This is useful to handle things like making sure locks get released. Do not set your own SIGUSR2.
+* We set signal handlers for everything to dispatch SIGUSR2 to all threads. If you set your own signal handlers instead, call unwind_dispatch_all in your handlers.
+* Use -rdynamic at link time to get function names to work in backtraces.
 
 # Example
 

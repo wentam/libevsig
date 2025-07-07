@@ -25,6 +25,20 @@ extern thread_local unwind_handler_stack_entry* unwind_stack;
 extern thread_local uint64_t unwind_stack_alloc;
 extern thread_local uint64_t unwind_stack_fill;
 
+
+// IMPORTANT:
+// If you set your own signal handlers for stuff like SIGTERM/SIGINT, call this in your signal
+// handler. It will signal SIGUSR2 in all threads that you have called unwind_init in, which
+// we have configured to call all of your unwind handlers.
+//
+// We set handlers in unwind_init to do this if you have not.
+//
+// Never set SIGUSR2 if you need this mechanism to function. We've claimed it.
+//
+// This is useful because - for example - if you have an unwind handler to release a lock, you can
+// avoid a stale lock.
+void unwind_dispatch_all();
+
 void unwind_init(); // Must be called before using unwind system
 void unwind_cleanup(); // Call when done using unwind system
 

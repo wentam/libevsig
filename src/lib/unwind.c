@@ -7,25 +7,31 @@
 #include <signal.h>
 #include <unistd.h>
 #include <string.h>
+#include <pthread.h>
+
+static pthread_mutex_t threadlist_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_t* threadlist = NULL;
+static uint64_t threadlist_count = 0;
+static uint64_t threadlist_alloc = 0;
 
 thread_local unwind_handler_stack_entry* unwind_stack;
 thread_local uint64_t unwind_stack_alloc;
 thread_local uint64_t unwind_stack_fill;
 thread_local int64_t  unwind_init_ref = 0;
 
-static struct sigaction prev_sigterm;
-static struct sigaction prev_sigint;
-static struct sigaction prev_sigsegv;
-static struct sigaction prev_sighup;
-static struct sigaction prev_sigquit;
-static struct sigaction prev_sigill;
-static struct sigaction prev_sigpipe;
-static struct sigaction prev_sigalrm;
-static struct sigaction prev_sigbus;
-static struct sigaction prev_sigsys;
-static struct sigaction prev_sigstkflt;
-static struct sigaction prev_sigabrt;
-static struct sigaction prev_sigfpe;
+//static struct sigaction prev_sigterm;
+//static struct sigaction prev_sigint;
+//static struct sigaction prev_sigsegv;
+//static struct sigaction prev_sighup;
+//static struct sigaction prev_sigquit;
+//static struct sigaction prev_sigill;
+//static struct sigaction prev_sigpipe;
+//static struct sigaction prev_sigalrm;
+//static struct sigaction prev_sigbus;
+//static struct sigaction prev_sigsys;
+//static struct sigaction prev_sigstkflt;
+//static struct sigaction prev_sigabrt;
+//static struct sigaction prev_sigfpe;
 
 void _runprev(struct sigaction* a, int sig) {
   if (!a) return;
@@ -41,7 +47,7 @@ void _runprev(struct sigaction* a, int sig) {
   }
 }
 
-void _sighandle(int sig) {
+static void _sighandle_usr(int sig) {
   unwind_run_all_handlers();
 
   //struct sigaction* a = NULL;
@@ -65,7 +71,20 @@ void _sighandle(int sig) {
 
   //if (a) _runprev(a, sig);
 
+}
+
+// For SIGTERM SIGINT etc to dispatch SIGUSR2 to our threads
+static void _sighandle_dispatch(int sig) {
+  unwind_dispatch_all();
+  free(threadlist);
   _exit(1);
+}
+
+void unwind_dispatch_all() {
+  pthread_mutex_lock(&threadlist_mutex); {
+    for (uint64_t i = 0; i < threadlist_count; i++)
+      pthread_kill(threadlist[i], SIGUSR2);
+  } pthread_mutex_unlock(&threadlist_mutex);
 }
 
 void unwind_init() {
@@ -79,50 +98,79 @@ void unwind_init() {
     }
   }
 
+  // Append this thread to our threadlist
+  pthread_mutex_lock(&threadlist_mutex); {
+    if (threadlist_alloc == 0) {
+      threadlist_alloc = 8;
+      threadlist = malloc(sizeof(pthread_t)*threadlist_alloc);
+      if (!threadlist) {
+        fprintf(stderr, "Failed to allocate threadlist");
+        exit(1);
+      }
+    }
+
+    if (threadlist_count >= threadlist_alloc) {
+      threadlist_alloc *= 2;
+      threadlist = realloc(threadlist, sizeof(pthread_t)*threadlist_alloc);
+      if (!threadlist) {
+        fprintf(stderr, "Failed to reallocate threadlist");
+        exit(1);
+      }
+    }
+
+    threadlist[threadlist_count++] = pthread_self();
+  } pthread_mutex_unlock(&threadlist_mutex);
+
+
+  struct sigaction sa_usr;
+  sa_usr.sa_handler = _sighandle_usr;
+  sigemptyset(&sa_usr.sa_mask);
+  sa_usr.sa_flags = 0;
+
   struct sigaction sa;
-  sa.sa_handler = _sighandle;
+  sa.sa_handler = _sighandle_dispatch;
   sigemptyset(&sa.sa_mask);
   sa.sa_flags = 0;
 
-  if (sigaction(SIGTERM, NULL, &prev_sigterm) != 0) {
-    memset(&prev_sigterm, 0, sizeof(prev_sigterm));
-  }
-  if (sigaction(SIGINT,  NULL, &prev_sigint) != 0) {
-    memset(&prev_sigint, 0, sizeof(prev_sigint));
-  }
-  if (sigaction(SIGSEGV, NULL, &prev_sigsegv) != 0) {
-    memset(&prev_sigsegv, 0, sizeof(prev_sigsegv));
-  }
-  if (sigaction(SIGHUP, NULL, &prev_sighup) != 0) {
-    memset(&prev_sighup, 0, sizeof(prev_sighup));
-  }
-  if (sigaction(SIGQUIT, NULL, &prev_sigquit) != 0) {
-    memset(&prev_sigquit, 0, sizeof(prev_sigquit));
-  }
-  if (sigaction(SIGILL, NULL, &prev_sigill) != 0) {
-    memset(&prev_sigill, 0, sizeof(prev_sigill));
-  }
-  if (sigaction(SIGPIPE, NULL, &prev_sigpipe) != 0) {
-    memset(&prev_sigpipe, 0, sizeof(prev_sigpipe));
-  }
-  if (sigaction(SIGALRM, NULL, &prev_sigalrm) != 0) {
-    memset(&prev_sigalrm, 0, sizeof(prev_sigalrm));
-  }
-  if (sigaction(SIGBUS, NULL, &prev_sigbus) != 0) {
-    memset(&prev_sigbus, 0, sizeof(prev_sigbus));
-  }
-  if (sigaction(SIGSYS, NULL, &prev_sigsys) != 0) {
-    memset(&prev_sigsys, 0, sizeof(prev_sigsys));
-  }
-  if (sigaction(SIGSTKFLT, NULL, &prev_sigstkflt) != 0) {
-    memset(&prev_sigstkflt, 0, sizeof(prev_sigstkflt));
-  };
-  if (sigaction(SIGABRT, NULL, &prev_sigabrt) != 0) {
-    memset(&prev_sigabrt, 0, sizeof(prev_sigabrt));
-  }
-  if (sigaction(SIGFPE, NULL, &prev_sigfpe) != 0) {
-    memset(&prev_sigfpe, 0, sizeof(prev_sigfpe));
-  }
+  //if (sigaction(SIGTERM, NULL, &prev_sigterm) != 0) {
+  //  memset(&prev_sigterm, 0, sizeof(prev_sigterm));
+  //}
+  //if (sigaction(SIGINT,  NULL, &prev_sigint) != 0) {
+  //  memset(&prev_sigint, 0, sizeof(prev_sigint));
+  //}
+  //if (sigaction(SIGSEGV, NULL, &prev_sigsegv) != 0) {
+  //  memset(&prev_sigsegv, 0, sizeof(prev_sigsegv));
+  //}
+  //if (sigaction(SIGHUP, NULL, &prev_sighup) != 0) {
+  //  memset(&prev_sighup, 0, sizeof(prev_sighup));
+  //}
+  //if (sigaction(SIGQUIT, NULL, &prev_sigquit) != 0) {
+  //  memset(&prev_sigquit, 0, sizeof(prev_sigquit));
+  //}
+  //if (sigaction(SIGILL, NULL, &prev_sigill) != 0) {
+  //  memset(&prev_sigill, 0, sizeof(prev_sigill));
+  //}
+  //if (sigaction(SIGPIPE, NULL, &prev_sigpipe) != 0) {
+  //  memset(&prev_sigpipe, 0, sizeof(prev_sigpipe));
+  //}
+  //if (sigaction(SIGALRM, NULL, &prev_sigalrm) != 0) {
+  //  memset(&prev_sigalrm, 0, sizeof(prev_sigalrm));
+  //}
+  //if (sigaction(SIGBUS, NULL, &prev_sigbus) != 0) {
+  //  memset(&prev_sigbus, 0, sizeof(prev_sigbus));
+  //}
+  //if (sigaction(SIGSYS, NULL, &prev_sigsys) != 0) {
+  //  memset(&prev_sigsys, 0, sizeof(prev_sigsys));
+  //}
+  //if (sigaction(SIGSTKFLT, NULL, &prev_sigstkflt) != 0) {
+  //  memset(&prev_sigstkflt, 0, sizeof(prev_sigstkflt));
+  //};
+  //if (sigaction(SIGABRT, NULL, &prev_sigabrt) != 0) {
+  //  memset(&prev_sigabrt, 0, sizeof(prev_sigabrt));
+  //}
+  //if (sigaction(SIGFPE, NULL, &prev_sigfpe) != 0) {
+  //  memset(&prev_sigfpe, 0, sizeof(prev_sigfpe));
+  //}
 
   sigaction(SIGTERM, &sa, NULL); // Set
   sigaction(SIGINT,  &sa, NULL); // Set
@@ -137,6 +185,8 @@ void unwind_init() {
   sigaction(SIGSTKFLT, &sa, NULL); // Set
   sigaction(SIGABRT, &sa, NULL); // Set
   sigaction(SIGFPE, &sa, NULL); // Set
+
+  sigaction(SIGUSR2, &sa_usr, NULL); // Set
 
   unwind_init_ref++;
 }
