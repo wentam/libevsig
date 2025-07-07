@@ -89,8 +89,10 @@ static void _sighandle_dispatch(int sig) {
 
 void unwind_dispatch_all() {
   pthread_mutex_lock(&threadlist_mutex); {
-    for (uint64_t i = 0; i < threadlist_count; i++)
+    for (uint64_t i = 0; i < threadlist_count; i++) {
+      fprintf(stderr, "dispatch");
       pthread_kill(threadlist[i], SIGUSR2);
+    }
   } pthread_mutex_unlock(&threadlist_mutex);
 }
 
