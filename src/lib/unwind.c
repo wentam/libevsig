@@ -19,6 +19,19 @@ thread_local uint64_t unwind_stack_alloc;
 thread_local uint64_t unwind_stack_fill;
 thread_local int64_t  unwind_init_ref = 0;
 
+
+// We use pthread's thread-local data system to trigger our unwind_run_all_handlers on SIGTERM
+// etc. pthread's provides a 'destructor' mechanism that allows you to write a custom destructor
+// that runs in the thread's context upon pthread_exit.
+//
+// We need this because we're running user-defined unwind code, and not all code is safe
+// to run in a signal handler directly (free for example).
+//
+// So our SIGUSR2 handler per-thread just calls pthread_exit to trigger the destructor for
+// this dummy variable.
+static pthread_key_t unwind_key;
+static pthread_once_t unwind_key_once = PTHREAD_ONCE_INIT;
+
 //static struct sigaction prev_sigterm;
 //static struct sigaction prev_sigint;
 //static struct sigaction prev_sigsegv;
@@ -48,7 +61,7 @@ void _runprev(struct sigaction* a, int sig) {
 }
 
 static void _sighandle_usr(int sig) {
-  unwind_run_all_handlers();
+  //unwind_run_all_handlers();
   pthread_exit(NULL);
 
   //struct sigaction* a = NULL;
@@ -95,6 +108,14 @@ void unwind_dispatch_all() {
   } pthread_mutex_unlock(&threadlist_mutex);
 }
 
+static void _run_unwind_handlers(void* ptr) {
+  unwind_run_all_handlers();
+}
+
+static void init_unwind_key() {
+  pthread_key_create(&unwind_key, _run_unwind_handlers);
+}
+
 void unwind_init() {
   if (unwind_init_ref == 0) {
     unwind_stack_alloc = 32;
@@ -129,6 +150,9 @@ void unwind_init() {
     threadlist[threadlist_count++] = pthread_self();
   } pthread_mutex_unlock(&threadlist_mutex);
 
+  // Set up our dummy key for destructor
+  pthread_once(&unwind_key_once, init_unwind_key);
+  pthread_setspecific(unwind_key, (void *)1);
 
   struct sigaction sa_usr;
   sa_usr.sa_handler = _sighandle_usr;
