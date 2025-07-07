@@ -48,11 +48,8 @@ void _runprev(struct sigaction* a, int sig) {
 }
 
 static void _sighandle_usr(int sig) {
-  sw_fprintf(stderr, "1\n");
   unwind_run_all_handlers();
-  sw_fprintf(stderr, "2\n");
   pthread_exit(NULL);
-  sw_fprintf(stderr, "3\n");
 
   //struct sigaction* a = NULL;
 
@@ -80,6 +77,7 @@ static void _sighandle_usr(int sig) {
 // For SIGTERM SIGINT etc to dispatch SIGUSR2 to our threads
 static void _sighandle_dispatch(int sig) {
   unwind_dispatch_all();
+  unwind_run_all_handlers();
   //free(threadlist);
   for (uint64_t i = 0; i < threadlist_count; i++) {
     pthread_join(threadlist[i], NULL);
@@ -90,8 +88,9 @@ static void _sighandle_dispatch(int sig) {
 void unwind_dispatch_all() {
   pthread_mutex_lock(&threadlist_mutex); {
     for (uint64_t i = 0; i < threadlist_count; i++) {
-      fprintf(stderr, "dispatch");
-      pthread_kill(threadlist[i], SIGUSR2);
+      if (!pthread_equal(threadlist[i], pthread_self())) {
+        pthread_kill(threadlist[i], SIGUSR2);
+      }
     }
   } pthread_mutex_unlock(&threadlist_mutex);
 }
