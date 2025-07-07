@@ -78,7 +78,7 @@ static void _sighandle_usr(int sig) {
 static void _sighandle_dispatch(int sig) {
   unwind_dispatch_all();
   //free(threadlist);
-  _exit(1);
+  exit(1);
 }
 
 void unwind_dispatch_all() {
