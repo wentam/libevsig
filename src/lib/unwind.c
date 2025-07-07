@@ -49,6 +49,7 @@ void _runprev(struct sigaction* a, int sig) {
 
 static void _sighandle_usr(int sig) {
   unwind_run_all_handlers();
+  pthread_exit(NULL);
 
   //struct sigaction* a = NULL;
 
