@@ -77,7 +77,7 @@ static void _sighandle_usr(int sig) {
 // For SIGTERM SIGINT etc to dispatch SIGUSR2 to our threads
 static void _sighandle_dispatch(int sig) {
   unwind_dispatch_all();
-  free(threadlist);
+  //free(threadlist);
   _exit(1);
 }
 
