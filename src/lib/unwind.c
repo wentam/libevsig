@@ -206,7 +206,7 @@ void unwind_init() {
 
   sigaction(SIGTERM, &sa, NULL); // Set
   sigaction(SIGINT,  &sa, NULL); // Set
-  sigaction(SIGSEGV, &sa, NULL); // Set
+  //sigaction(SIGSEGV, &sa, NULL); // Set
   sigaction(SIGHUP, &sa, NULL); // Set
   sigaction(SIGQUIT, &sa, NULL); // Set
   sigaction(SIGILL, &sa, NULL); // Set
