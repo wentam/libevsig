@@ -48,8 +48,11 @@ void _runprev(struct sigaction* a, int sig) {
 }
 
 static void _sighandle_usr(int sig) {
+  sw_fprintf(stderr, "1\n");
   unwind_run_all_handlers();
+  sw_fprintf(stderr, "2\n");
   pthread_exit(NULL);
+  sw_fprintf(stderr, "3\n");
 
   //struct sigaction* a = NULL;
 
