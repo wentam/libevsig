@@ -6,6 +6,8 @@
 #include "asm-generic/errno.h"
 #include "lib/signals.h"
 #include "stdio.h"
+#include <sys/mman.h>
+#include <unistd.h>
 
 void* sw_malloc(size_t size) {
   void* out = malloc(size);
@@ -259,6 +261,127 @@ int sw_fflush(FILE* stream) {
         break;
       default:
         SIG_SEND(SIGNAL_UNKNOWN_ERROR, "fflush: unknown error", NULL, NULL);
+    }
+  }
+
+  return out;
+}
+
+int sw_munmap(void* addr, size_t len) {
+  int out = munmap(addr, len);
+
+  if (out) {
+    switch(errno) {
+      case EINVAL:
+        SIG_SEND(SIGNAL_INVALID_INPUT, "munmap: invalid input", NULL, NULL);
+        break;
+      default:
+        SIG_SEND(SIGNAL_UNKNOWN_ERROR, "munmap: unknown error", NULL, NULL);
+    }
+  }
+
+  return out;
+}
+
+void* sw_mmap(void* addr, size_t len, int prot, int flags, int fd, off_t off) {
+  void* out = mmap(addr, len, prot, flags, fd, off);
+
+  if (out == MAP_FAILED) {
+    switch (errno) {
+      case EOVERFLOW:
+        SIG_SEND(SIGNAL_FILE_TOO_BIG, "mmap: requested map region exceeds file size", NULL, NULL);
+        break;
+      case ENXIO:
+        SIG_SEND(SIGNAL_NO_SUCH_DEVICE, "mmap: no such device or address", NULL, NULL);
+        break;
+      case ENOTSUP:
+        SIG_SEND(SIGNAL_UNSUPPORTED_OP, "mmap: unsupported operation", NULL, NULL);
+        break;
+      case ENOMEM:
+        SIG_SEND(SIGNAL_NOT_ENOUGH_MEMORY, "mmap: not enough memory", NULL, NULL);
+        break;
+      case ENODEV:
+        SIG_SEND(SIGNAL_NO_SUCH_DEVICE, "mmap: no such device (file type not supported by mmap?)", NULL, NULL);
+        break;
+      case EMFILE:
+        SIG_SEND(SIGNAL_TOO_MANY_OPEN_FILES, "mmap: too many mapped regions", NULL, NULL);
+        break;
+      case EINVAL:
+        SIG_SEND(SIGNAL_INVALID_INPUT, "mmap: invalid input", NULL, NULL);
+        break;
+      case EBADF:
+        SIG_SEND(SIGNAL_BAD_FILE_DESCRIPTOR, "mmap: bad file descriptor", NULL, NULL);
+        break;
+      case EAGAIN:
+        SIG_SEND(SIGNAL_WOULD_BLOCK, "mmap: mapping could not be locked in memory", NULL, NULL);
+        break;
+      case EACCES:
+        SIG_SEND(SIGNAL_PERMISSION_DENIED, "mmap: permission denied (file open for reading?)", NULL, NULL);
+        break;
+      default:
+        SIG_SEND(SIGNAL_UNKNOWN_ERROR, "mmap: unknown error", NULL, NULL);
+    }
+  }
+
+  return out;
+}
+
+int sw_msync(void* addr, size_t len, int flags) {
+  int out = msync(addr, len, flags);
+
+  if (out) {
+    switch (errno) {
+      case ENOMEM:
+        SIG_SEND(SIGNAL_NOT_ENOUGH_MEMORY, "msync: not enough memory", NULL, NULL);
+        break;
+      case EINVAL:
+        SIG_SEND(SIGNAL_INVALID_INPUT, "msync: invalid input", NULL, NULL);
+        break;
+      case EBUSY:
+        SIG_SEND(SIGNAL_BUSY, "msync: busy / device in use", NULL, NULL);
+        break;
+      default:
+        SIG_SEND(SIGNAL_UNKNOWN_ERROR, "msync: unknown error", NULL, NULL);
+    }
+  }
+
+  return out;
+}
+
+int sw_fsync(int fd) {
+  int out = fsync(fd);
+
+  if (out) {
+    switch (errno) {
+      case EBADF:
+        SIG_SEND(SIGNAL_BAD_FILE_DESCRIPTOR, "fsync: bad file descriptor", NULL, NULL);
+        break;
+      case EINTR:
+        SIG_SEND(SIGNAL_INTERRUPTED, "fsync: interrupted by signal", NULL, NULL);
+        break;
+      case EINVAL:
+        SIG_SEND(SIGNAL_INVALID_INPUT, "fsync: invalid input", NULL, NULL);
+        break;
+      case EIO:
+        SIG_SEND(SIGNAL_IO_ERROR, "fsync: I/O error", NULL, NULL);
+        break;
+      case EAGAIN:
+        SIG_SEND(SIGNAL_WOULD_BLOCK, "fsync: would block", NULL, NULL);
+        break;
+      case EISDIR:
+        SIG_SEND(SIGNAL_IS_DIRECTORY, "fsync: is a directory", NULL, NULL);
+        break;
+      case EOVERFLOW:
+        SIG_SEND(SIGNAL_FILE_TOO_BIG, "fsync: file too big", NULL, NULL);
+        break;
+      case EFBIG:
+        SIG_SEND(SIGNAL_FILE_TOO_BIG, "fsync: file too big", NULL, NULL);
+        break;
+      case ENOSPC:
+        SIG_SEND(SIGNAL_NOT_ENOUGH_SPACE, "fsync: not enough space", NULL, NULL);
+        break;
+      default:
+        SIG_SEND(SIGNAL_UNKNOWN_ERROR, "fsync: unknown error", NULL, NULL);
     }
   }
 
