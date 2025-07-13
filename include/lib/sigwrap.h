@@ -23,3 +23,4 @@ int    sw_fseek  (FILE* stream, long offset, int whence);
 int    sw_printf (const char* format, ...);
 int    sw_fprintf(FILE* stream, const char* format, ...);
 void*  sw_mmap   (void* addr, size_t len, int prot, int flags, int fd, off_t off);
+int    sw_munmap (void* addr, size_t len);
