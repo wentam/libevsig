@@ -76,7 +76,7 @@ size_t sw_fread(void* ptr, size_t size, size_t nmemb, FILE* stream) {
   return out;
 }
 
-size_t sw_fwrite(void* ptr, size_t size, size_t nmemb, FILE* stream) {
+size_t sw_fwrite(const void* ptr, size_t size, size_t nmemb, FILE* stream) {
   if (!stream) {
     SIG_SEND(SIGNAL_INVALID_INPUT, "fwrite: Can't write to NULL stream", NULL, NULL);
   }
