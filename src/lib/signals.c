@@ -181,6 +181,7 @@ void sig_init() {
 
 void sig_cleanup() {
   free(sig_handler_stack);
+  free(sig_restart_stack);
   unwind_cleanup();
 }
 
