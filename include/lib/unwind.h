@@ -6,7 +6,19 @@
 
 #define __GENSYM(base, counter) base##_gensym_##counter
 #define _GENSYM(base, counter) __GENSYM(base, counter)
-#define GENSYM(base) _GENSYM(base,__LINE__)
+
+// NOTE ON THE USAGE OF __COUNTER__
+//
+// Using __COUNTER__ technically means we're breaking the ODR (one-definition rule)
+// when our macros are used inside inline header functions. This is because
+// two different users of the header file may get different source code
+// for that line.
+//
+// However, this is mostly a theoretical concern, because in pratice they will
+// compile to byte-for-byte the same function as long as we limit this to just
+// variable names.
+
+#define GENSYM(base) _GENSYM(base, __COUNTER__)
 
 typedef struct {
   bool returned;
