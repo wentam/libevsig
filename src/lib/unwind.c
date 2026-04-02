@@ -8,17 +8,29 @@
 #include <unistd.h>
 #include <string.h>
 #include <pthread.h>
+#include "lib/mutex.h"
+
+// TODO make signal handling optional
+//
+// TODO expose public interface to call in your own signal handler as an
+// alternative to using ours.
+//
+// TODO go through which signals we handle, decide which to keep - we
+// probably don't want all
+
+static mutex shutdown_mutex;
+static pthread_mutex_t threadstart_mutex = PTHREAD_MUTEX_INITIALIZER;
+static volatile bool shutdown_thread_started = false;
 
 static pthread_mutex_t threadlist_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_t* threadlist = NULL;
-static uint64_t threadlist_count = 0;
-static uint64_t threadlist_alloc = 0;
+static volatile uint64_t threadlist_count = 0;
+static volatile uint64_t threadlist_alloc = 0;
 
 thread_local unwind_handler_stack_entry* unwind_stack;
 thread_local uint64_t unwind_stack_alloc;
 thread_local uint64_t unwind_stack_fill;
 thread_local int64_t  unwind_init_ref = 0;
-
 
 // We use pthread's thread-local data system to trigger our unwind_run_all_handlers on SIGTERM
 // etc. pthread's provides a 'destructor' mechanism that allows you to write a custom destructor
@@ -32,88 +44,230 @@ thread_local int64_t  unwind_init_ref = 0;
 static pthread_key_t unwind_key;
 static pthread_once_t unwind_key_once = PTHREAD_ONCE_INIT;
 
-//static struct sigaction prev_sigterm;
-//static struct sigaction prev_sigint;
-//static struct sigaction prev_sigsegv;
-//static struct sigaction prev_sighup;
-//static struct sigaction prev_sigquit;
-//static struct sigaction prev_sigill;
-//static struct sigaction prev_sigpipe;
-//static struct sigaction prev_sigalrm;
-//static struct sigaction prev_sigbus;
-//static struct sigaction prev_sigsys;
-//static struct sigaction prev_sigstkflt;
-//static struct sigaction prev_sigabrt;
-//static struct sigaction prev_sigfpe;
-
-void _runprev(struct sigaction* a, int sig) {
-  if (!a) return;
-
-  if (a->sa_flags & SA_SIGINFO) {
-    if (a->sa_sigaction && a->sa_sigaction != (void*)SIG_IGN && a->sa_sigaction != (void*)SIG_DFL) {
-      a->sa_sigaction(sig, NULL, NULL);
-    }
-  } else {
-    if (a->sa_handler && a->sa_handler != SIG_IGN && a->sa_handler != SIG_DFL) {
-      a->sa_handler(sig);
-    }
+// For signal-handler-safe printing
+static void _print(char* msg) {
+  uint64_t len = 0;
+  char* count = msg;
+  while (*count != '\0') {
+    count++;
+    len++;
   }
+
+  (void)write(STDERR_FILENO, msg, len);
 }
 
-static void _sighandle_usr(int sig) {
-  //unwind_run_all_handlers();
-  pthread_exit(NULL);
-
-  //struct sigaction* a = NULL;
-
-  //switch (sig) {
-  //  case SIGTERM: a = &prev_sigterm; break;
-  //  case SIGINT:  a = &prev_sigint;  break;
-  //  case SIGSEGV: a = &prev_sigsegv; break;
-  //  case SIGHUP:  a = &prev_sighup;  break;
-  //  case SIGQUIT: a = &prev_sigquit; break;
-  //  case SIGILL:  a = &prev_sigill;  break;
-  //  case SIGPIPE: a = &prev_sigpipe; break;
-  //  case SIGALRM: a = &prev_sigalrm; break;
-  //  case SIGBUS:  a = &prev_sigbus;  break;
-  //  case SIGSYS:  a = &prev_sigsys;  break;
-  //  case SIGSTKFLT: a = &prev_sigstkflt; break;
-  //  case SIGABRT: a = &prev_sigabrt; break;
-  //  case SIGFPE:  a = &prev_sigfpe; break;
-  //  default: break;
-  //}
-
-  //if (a) _runprev(a, sig);
-
+// For pthread_cleanup_push/pop
+static void _pthread_mutex_unlock(void* ud) {
+  pthread_mutex_unlock((pthread_mutex_t*)ud);
 }
 
-// For SIGTERM SIGINT etc to dispatch SIGUSR2 to our threads
-static void _sighandle_dispatch(int sig) {
-  unwind_dispatch_all();
-  //free(threadlist);
-  for (uint64_t i = 0; i < threadlist_count; i++) {
-    pthread_join(threadlist[i], NULL);
-  }
-  pthread_exit(NULL);
-  exit(1);
-}
+// Will do nothing if it's already in the list
+static void _threadlist_insert(pthread_t t) {
+  pthread_mutex_lock(&threadlist_mutex);
+  pthread_cleanup_push(_pthread_mutex_unlock, &threadlist_mutex);
+  {
+    // Check if the thread is already in the list, we don't want duplicates
+    bool duplicate = false;
+    for (uint64_t i = 0; i < threadlist_count; i++)
+      if (pthread_equal(threadlist[i], t)) duplicate = true;
 
-void unwind_dispatch_all() {
-  pthread_mutex_lock(&threadlist_mutex); {
-    for (uint64_t i = 0; i < threadlist_count; i++) {
-      if (!pthread_equal(threadlist[i], pthread_self())) {
-        pthread_kill(threadlist[i], SIGUSR2);
+    if (!duplicate) {
+
+      // Grow threadlist if needed
+      if (threadlist_count >= threadlist_alloc) {
+        if (!threadlist_alloc) threadlist_alloc = 8;
+        else threadlist_alloc *= 2;
+
+        threadlist = realloc(threadlist, sizeof(pthread_t)*threadlist_alloc);
+        if (!threadlist) {
+          fprintf(stderr, "Failed to (re)allocate threadlist for libevsig's unwind mechanism\n");
+          exit(1);
+        }
       }
+
+      // Insert thread
+      threadlist[threadlist_count++] = t;
     }
-  } pthread_mutex_unlock(&threadlist_mutex);
+  }
+  pthread_cleanup_pop(true);
 }
 
-static void _run_unwind_handlers(void* ptr) {
-  unwind_run_all_handlers();
+// Removes all instances, not just one
+static void _threadlist_rm(pthread_t t) {
+  //_print("rm\n");
+
+  pthread_mutex_lock(&threadlist_mutex);
+  pthread_cleanup_push(_pthread_mutex_unlock, &threadlist_mutex);
+  {
+
+    // Shift all instances of this thread id out of our list
+    uint64_t orig_len = threadlist_count;
+    uint64_t shift = 0;
+    for (uint64_t i = 0; i < orig_len; i++) {
+      if (pthread_equal(threadlist[i+shift], t)) shift++;
+      if (shift && i+shift < orig_len) threadlist[i] = threadlist[i+shift];
+    }
+    threadlist_count -= shift;
+
+    // Free list if there are no more threads
+    //
+    // Important to free the threadlist when the final thread
+    // cleans itself up.
+    if (threadlist_count == 0) {
+      //_print("freeing threadlist\n");
+      free(threadlist);
+      threadlist = NULL;
+      threadlist_alloc = 0;
+    }
+  }
+  pthread_cleanup_pop(true);
 }
+
+// Returns true if the specified thread is the only thread in the list,
+// otherwise false
+static bool _threadlist_exclusive_p(pthread_t t) {
+  bool exclusive = true;
+
+  pthread_mutex_lock(&threadlist_mutex);
+  pthread_cleanup_push(_pthread_mutex_unlock, &threadlist_mutex);
+  {
+    for (uint64_t i = 0; i < threadlist_count; i++)
+      if (!pthread_equal(threadlist[i], t)) { exclusive = false; break; }
+  }
+  pthread_cleanup_pop(true);
+
+  return exclusive;
+}
+
+// Not signal handler safe!
+static void _on_exit() {
+  unwind_run_all_handlers();
+  _threadlist_rm(pthread_self());
+}
+
+static void _sighandle_dispatch(int sig) {
+  // Let the user know we caught a signal.
+  //
+  // printf isn't safe for signal handler use, so we'll use 'write' which maps
+  // closely to the syscall.
+  _print("\n\n---------\n[libevsig] Received ");
+
+  switch (sig) {
+    case SIGINT:
+      _print("SIGINT");
+      break;
+    case SIGTERM:
+      _print("SIGTERM");
+      break;
+    case SIGSEGV:
+      _print("SIGSEGV");
+      break;
+    case SIGHUP:
+      _print("SIGHUP");
+      break;
+    case SIGQUIT:
+      _print("SIGQUIT");
+      break;
+    case SIGILL:
+      _print("SIGILL");
+      break;
+    case SIGPIPE:
+      _print("SIGPIPE");
+      break;
+    case SIGALRM:
+      _print("SIGALRM");
+      break;
+    case SIGBUS:
+      _print("SIGBUS");
+      break;
+    case SIGSYS:
+      _print("SIGSYS");
+      break;
+    case SIGSTKFLT:
+      _print("SIGSTKFLT");
+      break;
+    case SIGABRT:
+      _print("SIGABRT");
+      break;
+    case SIGFPE:
+      _print("SIGFPE");
+      break;
+    default:
+      _print("unknown signal");
+      break;
+  }
+
+  _print(". Cancelling all threads, which should run all unwind actions.\n");
+
+  // Tell all threads to exit, running all unwind handlers
+  unlock(&shutdown_mutex);
+}
+
+void unwind_all() {
+  // Tell all threads to exit, running all unwind handlers
+  unlock(&shutdown_mutex);
+
+  // Sleep until we're cancelled
+  uint64_t slep = 64;
+  uint64_t slep_max = 10000;
+  while (true) {
+    pthread_testcancel();
+    usleep(slep);
+    slep *= 2;
+    if (slep > slep_max) slep = slep_max;
+  }
+}
+
+static void _run_unwind_handlers(void* ptr) { _on_exit(); }
 
 static void init_unwind_key() {
   pthread_key_create(&unwind_key, _run_unwind_handlers);
+}
+
+static void* _shutdown_thread(void* ud) {
+  // Block all signals so that this isn't the thread
+  // that receives a signal, given that we need to
+  // be released to do things by threads that receive a signal.
+  //
+  // TODO might be better to set this before thread creation, then restore.
+  //
+  // Technically speaking a tiny moment in time where we could be signalled I think.
+  sigset_t set;
+  sigfillset(&set); // All signals
+  pthread_sigmask(SIG_BLOCK, &set, NULL);
+
+  await_unlock(&shutdown_mutex);
+
+  _print("[libevsig] Asking all threads utilizing unwind system to cancel and cleanup.\n");
+
+  pthread_mutex_lock(&threadlist_mutex);
+  pthread_cleanup_push(_pthread_mutex_unlock, &threadlist_mutex);
+  for (uint64_t i = 0; i < threadlist_count; i++) pthread_cancel(threadlist[i]);
+  pthread_cleanup_pop(true);
+
+  _print("[libevsig] Waiting for threads to exit. If this hangs, the hanging thread might need cancelation points added with pthread_testcancel().\n");
+
+  // Wait for all threads to stop.
+  //
+  // We shouldn't use pthread_join because it's UB if another thread is also joining.
+  //
+  // We'll just wait for the threadlist to be empty.
+  uint64_t slep = 64;
+  uint64_t slep_max = 20000;
+  while (true) {
+    bool done = false;
+
+    pthread_mutex_lock(&threadlist_mutex);
+    pthread_cleanup_push(_pthread_mutex_unlock, &threadlist_mutex);
+    if (threadlist_count == 0) done = true;
+    pthread_cleanup_pop(true);
+
+    if (done) break;
+
+    usleep(slep);
+    slep *= 2;
+    if (slep > slep_max) slep = slep_max;
+  }
 }
 
 void unwind_init() {
@@ -122,87 +276,47 @@ void unwind_init() {
     unwind_stack_fill = 0;
     unwind_stack = malloc(sizeof(unwind_handler_stack_entry)*unwind_stack_alloc);
     if (!unwind_stack) {
-      fprintf(stderr, "Failed to allocate unwind stack");
+      fprintf(stderr, "Failed to allocate unwind stack\n");
       exit(1);
     }
   }
 
-  // Append this thread to our threadlist
-  pthread_mutex_lock(&threadlist_mutex); {
-    if (threadlist_alloc == 0) {
-      threadlist_alloc = 8;
-      threadlist = malloc(sizeof(pthread_t)*threadlist_alloc);
-      if (!threadlist) {
-        fprintf(stderr, "Failed to allocate threadlist");
+  // Start our shutdown thread if it's not running yet
+  pthread_mutex_lock(&threadstart_mutex);
+  pthread_cleanup_push(_pthread_mutex_unlock, &threadstart_mutex);
+  {
+    if (!shutdown_thread_started) {
+      ensure_locked(&shutdown_mutex);
+
+      pthread_t t;
+      int r = pthread_create(&t, NULL, _shutdown_thread, NULL);
+
+      if (r != 0) {
+        fprintf(stderr, "Failed to create shutdown thread for unwind system\n");
         exit(1);
       }
-    }
 
-    if (threadlist_count >= threadlist_alloc) {
-      threadlist_alloc *= 2;
-      threadlist = realloc(threadlist, sizeof(pthread_t)*threadlist_alloc);
-      if (!threadlist) {
-        fprintf(stderr, "Failed to reallocate threadlist");
-        exit(1);
-      }
+      shutdown_thread_started = true;
     }
+  }
+  pthread_cleanup_pop(true);
 
-    threadlist[threadlist_count++] = pthread_self();
-  } pthread_mutex_unlock(&threadlist_mutex);
+  // Insert this thread into our threadlist
+  _threadlist_insert(pthread_self());
 
   // Set up our dummy key for destructor
   pthread_once(&unwind_key_once, init_unwind_key);
   pthread_setspecific(unwind_key, (void *)1);
 
-  struct sigaction sa_usr;
-  sa_usr.sa_handler = _sighandle_usr;
-  sigemptyset(&sa_usr.sa_mask);
-  sa_usr.sa_flags = 0;
+  // Needed for ending threads in signal handler
+  //
+  // This is the default, but we need to be sure.
+  pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
 
   struct sigaction sa;
   sa.sa_handler = _sighandle_dispatch;
   sigemptyset(&sa.sa_mask);
   sa.sa_flags = 0;
-
-  //if (sigaction(SIGTERM, NULL, &prev_sigterm) != 0) {
-  //  memset(&prev_sigterm, 0, sizeof(prev_sigterm));
-  //}
-  //if (sigaction(SIGINT,  NULL, &prev_sigint) != 0) {
-  //  memset(&prev_sigint, 0, sizeof(prev_sigint));
-  //}
-  //if (sigaction(SIGSEGV, NULL, &prev_sigsegv) != 0) {
-  //  memset(&prev_sigsegv, 0, sizeof(prev_sigsegv));
-  //}
-  //if (sigaction(SIGHUP, NULL, &prev_sighup) != 0) {
-  //  memset(&prev_sighup, 0, sizeof(prev_sighup));
-  //}
-  //if (sigaction(SIGQUIT, NULL, &prev_sigquit) != 0) {
-  //  memset(&prev_sigquit, 0, sizeof(prev_sigquit));
-  //}
-  //if (sigaction(SIGILL, NULL, &prev_sigill) != 0) {
-  //  memset(&prev_sigill, 0, sizeof(prev_sigill));
-  //}
-  //if (sigaction(SIGPIPE, NULL, &prev_sigpipe) != 0) {
-  //  memset(&prev_sigpipe, 0, sizeof(prev_sigpipe));
-  //}
-  //if (sigaction(SIGALRM, NULL, &prev_sigalrm) != 0) {
-  //  memset(&prev_sigalrm, 0, sizeof(prev_sigalrm));
-  //}
-  //if (sigaction(SIGBUS, NULL, &prev_sigbus) != 0) {
-  //  memset(&prev_sigbus, 0, sizeof(prev_sigbus));
-  //}
-  //if (sigaction(SIGSYS, NULL, &prev_sigsys) != 0) {
-  //  memset(&prev_sigsys, 0, sizeof(prev_sigsys));
-  //}
-  //if (sigaction(SIGSTKFLT, NULL, &prev_sigstkflt) != 0) {
-  //  memset(&prev_sigstkflt, 0, sizeof(prev_sigstkflt));
-  //};
-  //if (sigaction(SIGABRT, NULL, &prev_sigabrt) != 0) {
-  //  memset(&prev_sigabrt, 0, sizeof(prev_sigabrt));
-  //}
-  //if (sigaction(SIGFPE, NULL, &prev_sigfpe) != 0) {
-  //  memset(&prev_sigfpe, 0, sizeof(prev_sigfpe));
-  //}
 
   sigaction(SIGTERM, &sa, NULL); // Set
   sigaction(SIGINT,  &sa, NULL); // Set
@@ -218,14 +332,14 @@ void unwind_init() {
   sigaction(SIGABRT, &sa, NULL); // Set
   sigaction(SIGFPE, &sa, NULL); // Set
 
-  sigaction(SIGUSR2, &sa_usr, NULL); // Set
-
   unwind_init_ref++;
 }
 
 void unwind_cleanup() {
   if (unwind_init_ref > 0) unwind_init_ref--;
   if (unwind_init_ref == 0) free(unwind_stack);
+
+  _on_exit();
 }
 
 void _unwind(unwind_return_point* p) {
@@ -281,6 +395,7 @@ void unwind_rm_handler(unwind_handler_stack_entry* e) {
 }
 
 
+// Not signal handler safe!
 void unwind_run_all_handlers() {
   while (unwind_stack_fill > 0) {
     unwind_handler_stack_entry* e = unwind_stack+(unwind_stack_fill-1);

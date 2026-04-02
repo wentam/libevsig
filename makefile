@@ -4,7 +4,8 @@ prefix ?= /usr/local/
 # -- end config
 
 INCLUDE = -Iinclude/ -Iinclude/lib/ -I.
-CFLAGS = -Wall -pthread $(INCLUDE) # -Wconversion
+CFLAGS = -Wall -mavx2 -msse2 -ffast-math -pthread $(INCLUDE) -flto -std=gnu23 -fwrapv -march=x86-64-v3 -fno-strict-aliasing -fzero-call-used-regs=skip -Wno-bitwise-instead-of-logical
+
 
 rwildcard=$(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
 
@@ -24,13 +25,13 @@ release: CFLAGS += -O3
 
 .PHONY: dev_fast
 dev_fast: default
-dev_fast: IWYU = 1
-dev_fast: CFLAGS += -g -Og -Werror
+#dev_fast: IWYU = 1
+dev_fast: CFLAGS += -g -Og
 
 .PHONY: dev
 dev: default
 dev: IWYU = 1
-dev: CFLAGS += -g -Og -Werror -fsanitize=address
+dev: CFLAGS += -g -Og -fsanitize=address
 
 .PHONY: default
 default: lib cli

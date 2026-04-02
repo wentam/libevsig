@@ -3,6 +3,7 @@
 #include <execinfo.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <pthread.h>
 #include "lib/sigwrap.h"
 #include "stdio.h"
 #include "threads.h"
@@ -149,11 +150,19 @@ static const char* catchall_handler(const char* sig_type, void* userdata, char* 
   sw_fprintf(stderr, CLR_BOLD "------------------------------\n" CLR_RESET, sig_type);
 
   // Run all unwind handlers because we're not actually unwinding
-  unwind_run_all_handlers();
+  //unwind_run_all_handlers();
 
   // Raise signal so GDB/the program stops
   raise(SIGINT);
-  exit(1);
+
+  // In case the signal doesn't work for some reason
+  unwind_all();
+
+  // Sleep and check for pthread cancellation forever while we wait for shutdown
+  while(true) {
+    pthread_testcancel();
+    usleep(1000);
+  }
 
   return SIG_RESTART_NULL;
 }

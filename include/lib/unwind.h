@@ -54,6 +54,8 @@ void unwind_dispatch_all();
 void unwind_init(); // Must be called before using unwind system
 void unwind_cleanup(); // Call when done using unwind system
 
+void unwind_all();
+
 void _unwind(unwind_return_point* p);
 void _unwind_action(on_unwind_handler h, void* userdata);
 void unwind_run_handler(unwind_handler_stack_entry* e); // TODO only works with last one
