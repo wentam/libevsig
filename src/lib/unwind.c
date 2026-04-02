@@ -104,7 +104,7 @@ static void _threadlist_rm(pthread_t t) {
     uint64_t orig_len = threadlist_count;
     uint64_t shift = 0;
     for (uint64_t i = 0; i < orig_len; i++) {
-      if (pthread_equal(threadlist[i+shift], t)) shift++;
+      if (i+shift < orig_len && pthread_equal(threadlist[i+shift], t)) shift++;
       if (shift && i+shift < orig_len) threadlist[i] = threadlist[i+shift];
     }
     threadlist_count -= shift;
