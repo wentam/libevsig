@@ -1,6 +1,5 @@
 #pragma once
 #include <stdio.h>
-#include "lib/signals.h"
 
 // TODO fmemopen
 // TODO fopencookie
