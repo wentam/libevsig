@@ -8,6 +8,8 @@
 #include "stdio.h"
 #include <sys/mman.h>
 #include <unistd.h>
+#include <stdint.h>
+#include <fcntl.h>
 
 void* sw_malloc(size_t size) {
   void* out = malloc(size);
@@ -465,6 +467,84 @@ int sw_fprintf(FILE* stream, const char* format, ...) {
     SIG_SEND(SIGNAL_FAIL, "fprintf failed", NULL, NULL);
   }
 
+  return out;
+}
+
+int sw_fcntl3(int fd, int cmd, uint64_t a) {
+  int out = fcntl(fd, cmd, a);
+  if (out == -1) {
+    switch (errno) {
+      case EPERM:
+      case EACCES:
+        SIG_SEND(SIGNAL_PERMISSION_DENIED, "fcntl(): Permission denied", NULL, NULL);
+        break;
+      case EBADF:
+        SIG_SEND(SIGNAL_BAD_FILE_DESCRIPTOR, "fcntl(): Bad file descriptor", NULL, NULL);
+        break;
+      case EINTR:
+        SIG_SEND(SIGNAL_INTERRUPTED, "fcntl(): Interupted", NULL, NULL);
+        break;
+      case EINVAL:
+        SIG_SEND(SIGNAL_INVALID_INPUT, "fcntl(): Invalid input", NULL, NULL);
+        break;
+      case EMFILE:
+        SIG_SEND(SIGNAL_TOO_MANY_OPEN_FILES, "fcntl(): Too many open files", NULL, NULL);
+        break;
+      case ENOLCK:
+        SIG_SEND(SIGNAL_TOO_MANY_LOCKS, "fcntl(): Too many locks", NULL, NULL);
+        break;
+      case EOVERFLOW:
+        SIG_SEND(SIGNAL_OVERFLOW, "fcntl(): overflow", NULL, NULL);
+        break;
+      case ESRCH:
+        SIG_SEND(SIGNAL_NOT_FOUND, "fcntl(): process not found", NULL, NULL);
+        break;
+      case EDEADLK:
+        SIG_SEND(SIGNAL_WOULD_DEADLOCK, "fcntl(): would deadlock", NULL, NULL);
+        break;
+      default:
+        SIG_SEND(SIGNAL_UNKNOWN_ERROR, "fcntl(): unknown error", NULL, NULL);
+    }
+  }
+  return out;
+}
+
+int sw_fcntl2(int fd, int cmd) {
+  int out = fcntl(fd, cmd);
+  if (out == -1) {
+    switch (errno) {
+      case EPERM:
+      case EACCES:
+        SIG_SEND(SIGNAL_PERMISSION_DENIED, "fcntl(): Permission denied", NULL, NULL);
+        break;
+      case EBADF:
+        SIG_SEND(SIGNAL_BAD_FILE_DESCRIPTOR, "fcntl(): Bad file descriptor", NULL, NULL);
+        break;
+      case EINTR:
+        SIG_SEND(SIGNAL_INTERRUPTED, "fcntl(): Interupted", NULL, NULL);
+        break;
+      case EINVAL:
+        SIG_SEND(SIGNAL_INVALID_INPUT, "fcntl(): Invalid input", NULL, NULL);
+        break;
+      case EMFILE:
+        SIG_SEND(SIGNAL_TOO_MANY_OPEN_FILES, "fcntl(): Too many open files", NULL, NULL);
+        break;
+      case ENOLCK:
+        SIG_SEND(SIGNAL_TOO_MANY_LOCKS, "fcntl(): Too many locks", NULL, NULL);
+        break;
+      case EOVERFLOW:
+        SIG_SEND(SIGNAL_OVERFLOW, "fcntl(): overflow", NULL, NULL);
+        break;
+      case ESRCH:
+        SIG_SEND(SIGNAL_NOT_FOUND, "fcntl(): process not found", NULL, NULL);
+        break;
+      case EDEADLK:
+        SIG_SEND(SIGNAL_WOULD_DEADLOCK, "fcntl(): would deadlock", NULL, NULL);
+        break;
+      default:
+        SIG_SEND(SIGNAL_UNKNOWN_ERROR, "fcntl(): unknown error", NULL, NULL);
+    }
+  }
   return out;
 }
 
