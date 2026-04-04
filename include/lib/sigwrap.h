@@ -49,7 +49,7 @@ int    sw_munmap (void* addr, size_t len);
         SIG_SEND(SIGNAL_TOO_MANY_OPEN_FILES, "fcntl(): Too many open files", NULL, NULL); \
         break; \
       case ENOLCK: \
-        SIG_SEND(SIGNAL_TOO__MANY_LOCKS, "fcntl(): Too many locks", NULL, NULL); \
+        SIG_SEND(SIGNAL_TOO_MANY_LOCKS, "fcntl(): Too many locks", NULL, NULL); \
         break; \
       case EOVERFLOW: \
         SIG_SEND(SIGNAL_OVERFLOW, "fcntl(): overflow", NULL, NULL); \
@@ -58,7 +58,7 @@ int    sw_munmap (void* addr, size_t len);
         SIG_SEND(SIGNAL_NOT_FOUND, "fcntl(): process not found", NULL, NULL); \
         break; \
       case EDEADLK: \
-        SIG_SEND(SIGNAL_DEADLOCK, "fcntl(): would deadlock", NULL, NULL); \
+        SIG_SEND(SIGNAL_WOULD_DEADLOCK, "fcntl(): would deadlock", NULL, NULL); \
         break; \
       default: \
         SIG_SEND(SIGNAL_UNKNOWN_ERROR, "fcntl(): unknown error", NULL, NULL); \
