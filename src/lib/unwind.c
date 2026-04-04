@@ -8,7 +8,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <pthread.h>
-#include "lib/mutex.h"
+#include "lib/evsig_mutex.h"
 
 // TODO make signal handling optional
 //
@@ -18,7 +18,7 @@
 // TODO go through which signals we handle, decide which to keep - we
 // probably don't want all
 
-static mutex shutdown_mutex;
+static evsig_mutex shutdown_mutex;
 static pthread_mutex_t threadstart_mutex = PTHREAD_MUTEX_INITIALIZER;
 static volatile bool shutdown_thread_started = false;
 
@@ -125,6 +125,7 @@ static void _threadlist_rm(pthread_t t) {
 
 // Returns true if the specified thread is the only thread in the list,
 // otherwise false
+[[maybe_unused]]
 static bool _threadlist_exclusive_p(pthread_t t) {
   bool exclusive = true;
 
@@ -200,12 +201,12 @@ static void _sighandle_dispatch(int sig) {
   _print(". Cancelling all threads, which should run all unwind actions.\n");
 
   // Tell all threads to exit, running all unwind handlers
-  unlock(&shutdown_mutex);
+  evsig_unlock(&shutdown_mutex);
 }
 
 void unwind_all() {
   // Tell all threads to exit, running all unwind handlers
-  unlock(&shutdown_mutex);
+  evsig_unlock(&shutdown_mutex);
 
   // Sleep until we're cancelled
   uint64_t slep = 64;
@@ -236,7 +237,7 @@ static void* _shutdown_thread(void* ud) {
   sigfillset(&set); // All signals
   pthread_sigmask(SIG_BLOCK, &set, NULL);
 
-  await_unlock(&shutdown_mutex);
+  evsig_await_unlock(&shutdown_mutex);
 
   _print("[libevsig] Asking all threads utilizing unwind system to cancel and cleanup.\n");
 
@@ -268,6 +269,8 @@ static void* _shutdown_thread(void* ud) {
     slep *= 2;
     if (slep > slep_max) slep = slep_max;
   }
+
+  return NULL;
 }
 
 void unwind_init() {
@@ -286,7 +289,7 @@ void unwind_init() {
   pthread_cleanup_push(_pthread_mutex_unlock, &threadstart_mutex);
   {
     if (!shutdown_thread_started) {
-      ensure_locked(&shutdown_mutex);
+      evsig_ensure_locked(&shutdown_mutex);
 
       pthread_t t;
       int r = pthread_create(&t, NULL, _shutdown_thread, NULL);

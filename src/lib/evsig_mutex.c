@@ -1,4 +1,4 @@
-#include "lib/mutex.h"
+#include "lib/evsig_mutex.h"
 #include <time.h>
 
 #define FNV_OFFSET 14695981039346656037ULL
@@ -30,7 +30,7 @@ static uint64_t rand64() {
   return rand64_seed;
 }
 
-void lock(mutex* m) {
+void evsig_lock(evsig_mutex* m) {
   uint8_t expected = 0;
   uint32_t spinwait = 128;
 
@@ -62,10 +62,10 @@ void lock(mutex* m) {
   }
 }
 
-void unlock(mutex* m) { atomic_store_explicit(m, 0, memory_order_release); }
-void ensure_locked(mutex* m) { atomic_store_explicit(m, 1, memory_order_release); }
+void evsig_unlock(evsig_mutex* m) { atomic_store_explicit(m, 0, memory_order_release); }
+void evsig_ensure_locked(evsig_mutex* m) { atomic_store_explicit(m, 1, memory_order_release); }
 
-void await_unlock(mutex* m) {
+void evsig_await_unlock(evsig_mutex* m) {
   uint32_t spinwait = 128;
   while (atomic_load(m) != 0) {
     if (spinwait > 1) {
