@@ -270,6 +270,10 @@ static void* _shutdown_thread(void* ud) {
     if (slep > slep_max) slep = slep_max;
   }
 
+  // There might be other threads not using our system. Thus we should explicitly exit to
+  // make sure everything stops.
+  exit(1);
+
   return NULL;
 }
 
