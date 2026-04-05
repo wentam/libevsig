@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <fcntl.h>
+#include <arpa/inet.h>
 
 void* sw_malloc(size_t size) {
   void* out = malloc(size);
@@ -545,6 +546,29 @@ int sw_fcntl2(int fd, int cmd) {
         SIG_SEND(SIGNAL_UNKNOWN_ERROR, "fcntl(): unknown error", NULL, NULL);
     }
   }
+  return out;
+}
+
+const char* sw_inet_ntop(int af, const void *restrict src,
+                         char dst[], socklen_t size) {
+  const char* out = inet_ntop(af, src, dst, size);
+
+  if (!out) {
+    switch(errno) {
+      case EAFNOSUPPORT:
+        SIG_SEND(SIGNAL_UNSUPPORTED, "inet_ntop(): Unsupported address family", NULL, NULL);
+        break;
+      case ENOSPC:
+        SIG_SEND(SIGNAL_INVALID_INPUT,
+                 "inet_ntop(): Converted address string would be larger than size specified",
+                 NULL, NULL);
+        break;
+      default:
+        SIG_SEND(SIGNAL_UNKNOWN_ERROR, "inet_ntop(): Unknown error", NULL, NULL);
+        break;
+    }
+  }
+
   return out;
 }
 
