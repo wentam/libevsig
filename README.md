@@ -73,6 +73,9 @@ int main() {
     //
     // After running the restart, execution would continue on to repeat
     // middle_func() again if we didn't have the exit() call.
+    //
+    // 'AUTOPOP' tells us that this restart will be removed once it falls
+    // out of scope.
     SIG_PROVIDE_AUTOPOP_RESTART(SIGNAL_FAIL, SIG_RESTART_MAIN, ({
       sw_fprintf(stderr, "RESTART_MAIN\n");
       exit(1);
