@@ -89,3 +89,9 @@ void unwind_handler_print(void* str);
     if(p.returned) { handle_unwind_code; } else { code_that_might_unwind; }; \
   }
 
+#define UNWIND_AUTOPOP_RETURN_POINT(p, handle_unwind_code) \
+  unwind_return_point p; \
+  p.returned = false; \
+  p.unwind_to = unwind_stack_fill; \
+  if(setjmp(p.jbuf)) p.returned = true; \
+  if(p.returned) { handle_unwind_code; }

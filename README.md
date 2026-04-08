@@ -27,9 +27,9 @@ to UNWIND_ACTION even though the stack unwinds past it.
 
 ```C
 #include <stdio.h>
-#include "evsig/signals.h"
-#include "evsig/sigwrap.h"
-#include "evsig/unwind.h"
+#include <evsig/signals.h>
+#include <evsig/sigwrap.h>
+#include <evsig/unwind.h>
 #include "stdlib.h"
 
 SIG_DEFTYPE(SIG_RESTART_MAIN);
@@ -37,24 +37,24 @@ SIG_DEFTYPE(SIG_RESTART_MIDDLE);
 SIG_DEFTYPE(SIG_RESTART_TOP);
 
 void top_func() {
-  SIG_PROVIDE_RESTART(SIGNAL_FAIL, ({
-    SIG_SEND(SIGNAL_FAIL, "something bad happened", NULL, NULL);
-  }), SIG_RESTART_TOP, ({
+  SIG_PROVIDE_AUTOPOP_RESTART(SIGNAL_FAIL, SIG_RESTART_TOP, ({
     sw_fprintf(stderr, "RESTART_TOP\n");
     exit(1);
   }));
+
+  SIG_SEND(SIGNAL_FAIL, "something bad happened", NULL, NULL);
 }
 
 void middle_func() {
   sw_fprintf(stderr, "pretending to ALLOCATE something\n");
   UNWIND_ACTION(unwind_handler_print, "pretending to FREE something\n");
 
-  SIG_PROVIDE_RESTART(SIGNAL_FAIL, ({
-    top_func();
-  }), SIG_RESTART_MIDDLE, ({
+  SIG_PROVIDE_AUTOPOP_RESTART(SIGNAL_FAIL, SIG_RESTART_MIDDLE, ({
     sw_fprintf(stderr, "RESTART_MIDDLE\n");
     exit(1);
   }));
+
+  top_func();
 }
 
 const char* fail_handler(const char* sig_type, void* userdata, char* msg, void* signal_data) {
@@ -67,24 +67,29 @@ int main() {
   {
     SIG_AUTOPOP_HANDLER(SIGNAL_FAIL, fail_handler, NULL);
 
-    SIG_PROVIDE_RESTART(SIGNAL_FAIL, ({
-      middle_func();
-    }), SIG_RESTART_MAIN, ({
+    // This restart runs because the handler we pushed selected SIG_RESTART_MAIN
+    // upon receiving SIGNAL_FAIL, and this restart was on the restart stack
+    // available to be selected.
+    //
+    // After running the restart, execution would continue on to repeat
+    // middle_func() again if we didn't have the exit() call.
+    SIG_PROVIDE_AUTOPOP_RESTART(SIGNAL_FAIL, SIG_RESTART_MAIN, ({
       sw_fprintf(stderr, "RESTART_MAIN\n");
       exit(1);
     }));
+
+    middle_func();
   }
 
   sig_cleanup();
   return 0;
 }
 ```
-
 # How it works
 
 ## The signal system
 
-Signal handler functions are pushed onto a thread-local stack. When a signal is sent, handlers for that signal type are called, walking down the stack until one selects an approprate restart. Restarts - of which there are default and user-defined entries - describe a point to unwind to and error handling code to run when we unwind to that point ("catch" but to any stack frame).
+Signal handler functions are pushed onto a thread-local stack. When a signal is sent, handlers for that signal type are called, walking down the stack until one selects an approprate restart. Restarts describe a point to unwind to and code to run when we unwind to that point ("catch" but to any stack frame).
 
 ## The unwind system
 

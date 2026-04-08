@@ -54,4 +54,10 @@ void           _unwind_handler_sig_rm_restart(void* id);
     gensymb = _sig_push_restart(sig_type, restart_type, &gensym); \
     UNWIND_ACTION(_unwind_handler_sig_rm_restart, &gensymb); \
     might_signal_code; \
-  }, restart_action); \
+  }, restart_action);
+
+#define _SIG_PROVIDE_AUTOPOP_RESTART(sig_type, restart_type, restart_action, gensym, gensymb) \
+  uint64_t gensymb; \
+  UNWIND_AUTOPOP_RETURN_POINT(gensym, restart_action); \
+  gensymb = _sig_push_restart(sig_type, restart_type, &gensym); \
+  UNWIND_ACTION(_unwind_handler_sig_rm_restart, &gensymb);
