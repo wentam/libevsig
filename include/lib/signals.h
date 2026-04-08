@@ -140,6 +140,8 @@ const char* sig_static_handler(const char* sig_type, void* userdata, char* msg, 
   _SIG_PROVIDE_RESTART(sig_type, { might_signal_code; }, restart_type, { restart_action; }, GENSYM(sigprestart), GENSYM(sigprestartb))
 
 // Define a signal handler. Handler is removed at end of scope.
+//
+// If the handler function is NULL, this is a safe no-op.
 #define SIG_AUTOPOP_HANDLER(sig_type, handler, userdata) \
   _SIG_AUTOPOP_HANDLER(sig_type, handler, userdata, GENSYM(sighandler))
 

@@ -294,6 +294,8 @@ bool _sig_restart_available(const char* sig_type, const char* restart_type) {
 }
 
 const uint64_t _sig_push_handler(const char* sig_type, sig_handler handler, void* userdata) {
+  if (!handler) return 0;
+
   if (sig_handler_stack_fill+1 > sig_handler_stack_alloc) {
     sig_handler_stack_alloc *= 2;
     sig_handler_stack =
@@ -308,7 +310,7 @@ const uint64_t _sig_push_handler(const char* sig_type, sig_handler handler, void
   sig_handler_stack_entry e = { .sig_type = sig_type,
                                 .handler = handler,
                                 .handler_userdata = userdata,
-                                .id = 0 };
+                                .id = 1 };
 
   if (sig_handler_stack_fill > 0) e.id = sig_handler_stack[sig_handler_stack_fill-1].id+1;
 
@@ -318,6 +320,9 @@ const uint64_t _sig_push_handler(const char* sig_type, sig_handler handler, void
 }
 
 void _sig_rm_handler(uint64_t id) {
+  // Not a valid id, signals that we didn't actually push a handler (probably b/c it was NULL)
+  if (id == 0) return;
+
   if (sig_handler_stack_fill <= 0) return;
 
   int64_t found = -1;
