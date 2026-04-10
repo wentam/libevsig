@@ -88,6 +88,33 @@ int main() {
   return 0;
 }
 ```
+
+# A note on local state and restarts
+
+When defining a restart that needs to access state that may have
+been mutated after the restart, the mutated state should be marked
+as volatile.
+
+This is because setjmp saves local registers. Returning to the restart
+restores these registers.
+
+Without 'volatile', the following would never increase the 'slep'
+counter on subsequent restarts:
+
+```C
+  const u64 slep_start = 10000;
+  const u64 slep_max   = 5000000;
+  volatile u64 slep    = slep_start;
+
+  SIG_AUTOPOP_HANDLER(SIGNAL_ALL, c->handle_tcp_errors, NULL);
+  SIG_AUTOPOP_RESTART(SIGNAL_ALL, SIG_RESTART_TCP_CLIENT_RECONNECT, ({
+    usleep(slep);
+    slep *= 2;
+    if (slep > slep_max) slep = slep_max;
+  }));
+```
+
+
 # How it works
 
 ## The signal system
