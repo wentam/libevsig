@@ -1,4 +1,5 @@
 #include "libevsig/sigwrap.h"
+#include "libevsig/errno_signals.h"
 #include <errno.h>
 #include <stdlib.h>
 #include "__stdarg_va_arg.h"
@@ -99,87 +100,8 @@ FILE* sw_fopen(const char* pathname, const char* mode) {
 
   // fopen: If NULL is returned, we have an error. Will then set errno.
 
-  if (!out) {
-    switch (errno) {
-      case EACCES:
-        SIG_SEND(SIGNAL_PERMISSION_DENIED, "fopen: permission denied", NULL, NULL);
-        break;
-      case EEXIST:
-        SIG_SEND(SIGNAL_FILE_EXISTS, "fopen: file already exists", NULL, NULL);
-        break;
-      case EIO:
-        SIG_SEND(SIGNAL_IO_ERROR, "fopen: I/O error", NULL, NULL);
-        break;
-      case EINVAL:
-        SIG_SEND(SIGNAL_INVALID_INPUT, "fopen: invalid input", NULL, NULL);
-        break;
-      case EISDIR:
-        SIG_SEND(SIGNAL_IS_DIRECTORY, "fopen: is a directory", NULL, NULL);
-        break;
-      case EMFILE:
-        SIG_SEND(SIGNAL_TOO_MANY_OPEN_FILES, "fopen: too many open files", NULL, NULL);
-        break;
-      case ENOENT:
-        SIG_SEND(SIGNAL_NO_SUCH_FILE_OR_DIR, "fopen: no such file or directory", NULL, NULL);
-        break;
-      case ENOMEM:
-        SIG_SEND(SIGNAL_NOT_ENOUGH_MEMORY, "fopen: not enough memory", NULL, NULL);
-        break;
-      case ENXIO:
-        SIG_SEND(SIGNAL_NO_SUCH_DEVICE, "fopen: no such device or address", NULL, NULL);
-        break;
-      case EROFS:
-        SIG_SEND(SIGNAL_READ_ONLY_FS, "fopen: read only filesystem", NULL, NULL);
-        break;
-      case EBADF:
-        SIG_SEND(SIGNAL_BAD_FILE_DESCRIPTOR, "fopen: bad file descriptor", NULL, NULL);
-        break;
-      case EBUSY:
-        SIG_SEND(SIGNAL_BUSY, "fopen: busy / device in use", NULL, NULL);
-        break;
-      case EDQUOT:
-        SIG_SEND(SIGNAL_NOT_ENOUGH_SPACE, "fopen: not enough space", NULL, NULL);
-        break;
-      case EFAULT:
-        SIG_SEND(SIGNAL_INVALID_INPUT, "fopen: pathname outside address space", NULL, NULL);
-        break;
-      case EFBIG:
-        SIG_SEND(SIGNAL_FILE_TOO_BIG, "fopen: file too big", NULL, NULL);
-        break;
-      case EINTR:
-        SIG_SEND(SIGNAL_INTERRUPTED, "fopen: interrupted by signal", NULL, NULL);
-        break;
-      case ELOOP:
-        SIG_SEND(SIGNAL_TOO_MANY_SYMLINKS, "fopen: too many symbolic links", NULL, NULL);
-        break;
-      case ENAMETOOLONG:
-        SIG_SEND(SIGNAL_INVALID_INPUT, "fopen: pathname too long", NULL, NULL);
-        break;
-      case ENFILE:
-        SIG_SEND(SIGNAL_TOO_MANY_OPEN_FILES, "fopen: too many open files", NULL, NULL);
-        break;
-      case ENODEV:
-        SIG_SEND(SIGNAL_NO_SUCH_DEVICE, "fopen: no such device", NULL, NULL);
-        break;
-      case ENOSPC:
-        SIG_SEND(SIGNAL_NOT_ENOUGH_SPACE, "fopen: not enough space", NULL, NULL);
-        break;
-      case ENOTDIR:
-        SIG_SEND(SIGNAL_IS_NOT_DIRECTORY, "fopen: not a directory", NULL, NULL);
-        break;
-      case EOPNOTSUPP:
-        SIG_SEND(SIGNAL_UNSUPPORTED_OP, "fopen: unsupported operation", NULL, NULL);
-        break;
-      case EOVERFLOW:
-        SIG_SEND(SIGNAL_FILE_TOO_BIG, "fopen: file too big", NULL, NULL);
-        break;
-      case EPERM:
-        SIG_SEND(SIGNAL_PERMISSION_DENIED, "fopen: permission denied", NULL, NULL);
-        break;
-      default:
-        SIG_SEND(SIGNAL_UNKNOWN_ERROR, "fopen: unknown error", NULL, NULL);
-    }
-  }
+  if (!out) SIG_SEND(sig_from_errno(errno), str_from_errno("fopen(): ", errno),
+                     NULL, NULL);
 
   return out;
 }
@@ -187,42 +109,8 @@ FILE* sw_fopen(const char* pathname, const char* mode) {
 int sw_fclose(FILE* stream) {
   int out = fclose(stream);
 
-  if (out) {
-    switch(errno) {
-      case EBADF:
-        SIG_SEND(SIGNAL_BAD_FILE_DESCRIPTOR, "fclose: bad file descriptor", NULL, NULL);
-        break;
-      case EINTR:
-        SIG_SEND(SIGNAL_INTERRUPTED, "fclose: interrupted by signal", NULL, NULL);
-        break;
-      case EIO:
-        SIG_SEND(SIGNAL_IO_ERROR, "fclose: I/O error", NULL, NULL);
-        break;
-      case ENOSPC:
-        SIG_SEND(SIGNAL_NOT_ENOUGH_SPACE, "fclose: not enough space", NULL, NULL);
-        break;
-      case EDQUOT:
-        SIG_SEND(SIGNAL_NOT_ENOUGH_SPACE, "fclose: not enough space", NULL, NULL);
-        break;
-      case EAGAIN:
-        SIG_SEND(SIGNAL_WOULD_BLOCK, "fclose: would block", NULL, NULL);
-        break;
-      case EFAULT:
-        SIG_SEND(SIGNAL_INVALID_INPUT, "fclose: buf outside address space", NULL, NULL);
-        break;
-      case EFBIG:
-        SIG_SEND(SIGNAL_FILE_TOO_BIG, "fclose: file too big", NULL, NULL);
-        break;
-      case EINVAL:
-        SIG_SEND(SIGNAL_INVALID_INPUT, "fclose: invalid input", NULL, NULL);
-        break;
-      case EPERM:
-        SIG_SEND(SIGNAL_PERMISSION_DENIED, "fclose: permission denied", NULL, NULL);
-        break;
-      default:
-        SIG_SEND(SIGNAL_UNKNOWN_ERROR, "fclose: unknown error", NULL, NULL);
-    }
-  }
+  if (out) SIG_SEND(sig_from_errno(errno), str_from_errno("fclose(): ", errno),
+                    NULL, NULL);
 
   return out;
 }
@@ -230,42 +118,8 @@ int sw_fclose(FILE* stream) {
 int sw_fflush(FILE* stream) {
   int out = fflush(stream);
 
-  if (out) {
-    switch(errno) {
-      case EBADF:
-        SIG_SEND(SIGNAL_BAD_FILE_DESCRIPTOR, "fflush: bad file descriptor", NULL, NULL);
-        break;
-      case EINTR:
-        SIG_SEND(SIGNAL_INTERRUPTED, "fflush: interrupted by signal", NULL, NULL);
-        break;
-      case EIO:
-        SIG_SEND(SIGNAL_IO_ERROR, "fflush: I/O error", NULL, NULL);
-        break;
-      case ENOSPC:
-        SIG_SEND(SIGNAL_NOT_ENOUGH_SPACE, "fflush: not enough space", NULL, NULL);
-        break;
-      case EDQUOT:
-        SIG_SEND(SIGNAL_NOT_ENOUGH_SPACE, "fflush: not enough space", NULL, NULL);
-        break;
-      case EAGAIN:
-        SIG_SEND(SIGNAL_WOULD_BLOCK, "fflush: would block", NULL, NULL);
-        break;
-      case EFAULT:
-        SIG_SEND(SIGNAL_INVALID_INPUT, "fflush: buf outside address space", NULL, NULL);
-        break;
-      case EFBIG:
-        SIG_SEND(SIGNAL_FILE_TOO_BIG, "fflush: file too big", NULL, NULL);
-        break;
-      case EINVAL:
-        SIG_SEND(SIGNAL_INVALID_INPUT, "fflush: invalid input", NULL, NULL);
-        break;
-      case EPERM:
-        SIG_SEND(SIGNAL_PERMISSION_DENIED, "fflush: permission denied", NULL, NULL);
-        break;
-      default:
-        SIG_SEND(SIGNAL_UNKNOWN_ERROR, "fflush: unknown error", NULL, NULL);
-    }
-  }
+  if (out) SIG_SEND(sig_from_errno(errno), str_from_errno("fflush(): ", errno),
+                    NULL, NULL);
 
   return out;
 }
@@ -273,15 +127,8 @@ int sw_fflush(FILE* stream) {
 int sw_munmap(void* addr, size_t len) {
   int out = munmap(addr, len);
 
-  if (out) {
-    switch(errno) {
-      case EINVAL:
-        SIG_SEND(SIGNAL_INVALID_INPUT, "munmap: invalid input", NULL, NULL);
-        break;
-      default:
-        SIG_SEND(SIGNAL_UNKNOWN_ERROR, "munmap: unknown error", NULL, NULL);
-    }
-  }
+  if (out) SIG_SEND(sig_from_errno(errno), str_from_errno("munmap(): ", errno),
+                    NULL, NULL);
 
   return out;
 }
@@ -290,40 +137,7 @@ void* sw_mmap(void* addr, size_t len, int prot, int flags, int fd, off_t off) {
   void* out = mmap(addr, len, prot, flags, fd, off);
 
   if (out == MAP_FAILED) {
-    switch (errno) {
-      case EOVERFLOW:
-        SIG_SEND(SIGNAL_FILE_TOO_BIG, "mmap: requested map region exceeds file size", NULL, NULL);
-        break;
-      case ENXIO:
-        SIG_SEND(SIGNAL_NO_SUCH_DEVICE, "mmap: no such device or address", NULL, NULL);
-        break;
-      case ENOTSUP:
-        SIG_SEND(SIGNAL_UNSUPPORTED_OP, "mmap: unsupported operation", NULL, NULL);
-        break;
-      case ENOMEM:
-        SIG_SEND(SIGNAL_NOT_ENOUGH_MEMORY, "mmap: not enough memory", NULL, NULL);
-        break;
-      case ENODEV:
-        SIG_SEND(SIGNAL_NO_SUCH_DEVICE, "mmap: no such device (file type not supported by mmap?)", NULL, NULL);
-        break;
-      case EMFILE:
-        SIG_SEND(SIGNAL_TOO_MANY_OPEN_FILES, "mmap: too many mapped regions", NULL, NULL);
-        break;
-      case EINVAL:
-        SIG_SEND(SIGNAL_INVALID_INPUT, "mmap: invalid input", NULL, NULL);
-        break;
-      case EBADF:
-        SIG_SEND(SIGNAL_BAD_FILE_DESCRIPTOR, "mmap: bad file descriptor", NULL, NULL);
-        break;
-      case EAGAIN:
-        SIG_SEND(SIGNAL_WOULD_BLOCK, "mmap: mapping could not be locked in memory", NULL, NULL);
-        break;
-      case EACCES:
-        SIG_SEND(SIGNAL_PERMISSION_DENIED, "mmap: permission denied (file open for reading?)", NULL, NULL);
-        break;
-      default:
-        SIG_SEND(SIGNAL_UNKNOWN_ERROR, "mmap: unknown error", NULL, NULL);
-    }
+    SIG_SEND(sig_from_errno(errno), str_from_errno("mmap(): ", errno), NULL, NULL)
   }
 
   return out;
@@ -332,21 +146,8 @@ void* sw_mmap(void* addr, size_t len, int prot, int flags, int fd, off_t off) {
 int sw_msync(void* addr, size_t len, int flags) {
   int out = msync(addr, len, flags);
 
-  if (out) {
-    switch (errno) {
-      case ENOMEM:
-        SIG_SEND(SIGNAL_NOT_ENOUGH_MEMORY, "msync: not enough memory", NULL, NULL);
-        break;
-      case EINVAL:
-        SIG_SEND(SIGNAL_INVALID_INPUT, "msync: invalid input", NULL, NULL);
-        break;
-      case EBUSY:
-        SIG_SEND(SIGNAL_BUSY, "msync: busy / device in use", NULL, NULL);
-        break;
-      default:
-        SIG_SEND(SIGNAL_UNKNOWN_ERROR, "msync: unknown error", NULL, NULL);
-    }
-  }
+  if (out) SIG_SEND(sig_from_errno(errno), str_from_errno("msync(): ", errno),
+                    NULL, NULL);
 
   return out;
 }
@@ -354,39 +155,8 @@ int sw_msync(void* addr, size_t len, int flags) {
 int sw_fsync(int fd) {
   int out = fsync(fd);
 
-  if (out) {
-    switch (errno) {
-      case EBADF:
-        SIG_SEND(SIGNAL_BAD_FILE_DESCRIPTOR, "fsync: bad file descriptor", NULL, NULL);
-        break;
-      case EINTR:
-        SIG_SEND(SIGNAL_INTERRUPTED, "fsync: interrupted by signal", NULL, NULL);
-        break;
-      case EINVAL:
-        SIG_SEND(SIGNAL_INVALID_INPUT, "fsync: invalid input", NULL, NULL);
-        break;
-      case EIO:
-        SIG_SEND(SIGNAL_IO_ERROR, "fsync: I/O error", NULL, NULL);
-        break;
-      case EAGAIN:
-        SIG_SEND(SIGNAL_WOULD_BLOCK, "fsync: would block", NULL, NULL);
-        break;
-      case EISDIR:
-        SIG_SEND(SIGNAL_IS_DIRECTORY, "fsync: is a directory", NULL, NULL);
-        break;
-      case EOVERFLOW:
-        SIG_SEND(SIGNAL_FILE_TOO_BIG, "fsync: file too big", NULL, NULL);
-        break;
-      case EFBIG:
-        SIG_SEND(SIGNAL_FILE_TOO_BIG, "fsync: file too big", NULL, NULL);
-        break;
-      case ENOSPC:
-        SIG_SEND(SIGNAL_NOT_ENOUGH_SPACE, "fsync: not enough space", NULL, NULL);
-        break;
-      default:
-        SIG_SEND(SIGNAL_UNKNOWN_ERROR, "fsync: unknown error", NULL, NULL);
-    }
-  }
+  if (out) SIG_SEND(sig_from_errno(errno), str_from_errno("fsync(): ", errno),
+                    NULL, NULL);
 
   return out;
 }
@@ -398,45 +168,10 @@ int sw_fseek(FILE* stream, long offset, int whence) {
 
   int out = fseek(stream, offset, whence);
 
-  if (out == -1) {
-    switch (errno) {
-      case EINVAL:
-        SIG_SEND(SIGNAL_INVALID_INPUT, "fseek: invalid argument(s)", NULL, NULL);
-        break;
-      case ESPIPE:
-        SIG_SEND(SIGNAL_NOT_SEEKABLE, "fseek: stream is not seekable", NULL, NULL);
-        break;
-      case EBADF:
-        SIG_SEND(SIGNAL_BAD_FILE_DESCRIPTOR, "fseek: bad file descriptor", NULL, NULL);
-        break;
-      case EINTR:
-        SIG_SEND(SIGNAL_INTERRUPTED, "fseek: interrupted by signal", NULL, NULL);
-        break;
-      case EIO:
-        SIG_SEND(SIGNAL_IO_ERROR, "fseek: I/O error", NULL, NULL);
-        break;
-      case ENOSPC:
-        SIG_SEND(SIGNAL_NOT_ENOUGH_SPACE, "fseek: not enough space", NULL, NULL);
-        break;
-      case EDQUOT:
-        SIG_SEND(SIGNAL_NOT_ENOUGH_SPACE, "fseek: not enough space", NULL, NULL);
-        break;
-      case EAGAIN:
-        SIG_SEND(SIGNAL_WOULD_BLOCK, "fseek: would block", NULL, NULL);
-        break;
-      case EFAULT:
-        SIG_SEND(SIGNAL_INVALID_INPUT, "fseek: buf outside address space", NULL, NULL);
-        break;
-      case EFBIG:
-        SIG_SEND(SIGNAL_FILE_TOO_BIG, "fseek: file too big", NULL, NULL);
-        break;
-      case EPERM:
-        SIG_SEND(SIGNAL_PERMISSION_DENIED, "fseek: permission denied", NULL, NULL);
-        break;
-      default:
-        SIG_SEND(SIGNAL_UNKNOWN_ERROR, "fseek: unknown error", NULL, NULL);
-    }
-  }
+
+  if (out == -1)
+    SIG_SEND(sig_from_errno(errno), str_from_errno("fseek(): ", errno),
+             NULL, NULL);
 
   return out;
 }
@@ -473,79 +208,21 @@ int sw_fprintf(FILE* stream, const char* format, ...) {
 
 int sw_fcntl3(int fd, int cmd, uint64_t a) {
   int out = fcntl(fd, cmd, a);
-  if (out == -1) {
-    switch (errno) {
-      case EPERM:
-      case EACCES:
-        SIG_SEND(SIGNAL_PERMISSION_DENIED, "fcntl(): Permission denied", NULL, NULL);
-        break;
-      case EBADF:
-        SIG_SEND(SIGNAL_BAD_FILE_DESCRIPTOR, "fcntl(): Bad file descriptor", NULL, NULL);
-        break;
-      case EINTR:
-        SIG_SEND(SIGNAL_INTERRUPTED, "fcntl(): Interupted", NULL, NULL);
-        break;
-      case EINVAL:
-        SIG_SEND(SIGNAL_INVALID_INPUT, "fcntl(): Invalid input", NULL, NULL);
-        break;
-      case EMFILE:
-        SIG_SEND(SIGNAL_TOO_MANY_OPEN_FILES, "fcntl(): Too many open files", NULL, NULL);
-        break;
-      case ENOLCK:
-        SIG_SEND(SIGNAL_TOO_MANY_LOCKS, "fcntl(): Too many locks", NULL, NULL);
-        break;
-      case EOVERFLOW:
-        SIG_SEND(SIGNAL_OVERFLOW, "fcntl(): overflow", NULL, NULL);
-        break;
-      case ESRCH:
-        SIG_SEND(SIGNAL_NOT_FOUND, "fcntl(): process not found", NULL, NULL);
-        break;
-      case EDEADLK:
-        SIG_SEND(SIGNAL_WOULD_DEADLOCK, "fcntl(): would deadlock", NULL, NULL);
-        break;
-      default:
-        SIG_SEND(SIGNAL_UNKNOWN_ERROR, "fcntl(): unknown error", NULL, NULL);
-    }
-  }
+
+  if (out == -1)
+    SIG_SEND(sig_from_errno(errno), str_from_errno("fcntl(): ", errno),
+             NULL, NULL);
+
   return out;
 }
 
 int sw_fcntl2(int fd, int cmd) {
   int out = fcntl(fd, cmd);
-  if (out == -1) {
-    switch (errno) {
-      case EPERM:
-      case EACCES:
-        SIG_SEND(SIGNAL_PERMISSION_DENIED, "fcntl(): Permission denied", NULL, NULL);
-        break;
-      case EBADF:
-        SIG_SEND(SIGNAL_BAD_FILE_DESCRIPTOR, "fcntl(): Bad file descriptor", NULL, NULL);
-        break;
-      case EINTR:
-        SIG_SEND(SIGNAL_INTERRUPTED, "fcntl(): Interupted", NULL, NULL);
-        break;
-      case EINVAL:
-        SIG_SEND(SIGNAL_INVALID_INPUT, "fcntl(): Invalid input", NULL, NULL);
-        break;
-      case EMFILE:
-        SIG_SEND(SIGNAL_TOO_MANY_OPEN_FILES, "fcntl(): Too many open files", NULL, NULL);
-        break;
-      case ENOLCK:
-        SIG_SEND(SIGNAL_TOO_MANY_LOCKS, "fcntl(): Too many locks", NULL, NULL);
-        break;
-      case EOVERFLOW:
-        SIG_SEND(SIGNAL_OVERFLOW, "fcntl(): overflow", NULL, NULL);
-        break;
-      case ESRCH:
-        SIG_SEND(SIGNAL_NOT_FOUND, "fcntl(): process not found", NULL, NULL);
-        break;
-      case EDEADLK:
-        SIG_SEND(SIGNAL_WOULD_DEADLOCK, "fcntl(): would deadlock", NULL, NULL);
-        break;
-      default:
-        SIG_SEND(SIGNAL_UNKNOWN_ERROR, "fcntl(): unknown error", NULL, NULL);
-    }
-  }
+
+  if (out == -1)
+    SIG_SEND(sig_from_errno(errno), str_from_errno("fcntl(): ", errno),
+             NULL, NULL);
+
   return out;
 }
 
@@ -553,21 +230,9 @@ const char* sw_inet_ntop(int af, const void *restrict src,
                          char dst[], socklen_t size) {
   const char* out = inet_ntop(af, src, dst, size);
 
-  if (!out) {
-    switch(errno) {
-      case EAFNOSUPPORT:
-        SIG_SEND(SIGNAL_UNSUPPORTED, "inet_ntop(): Unsupported address family", NULL, NULL);
-        break;
-      case ENOSPC:
-        SIG_SEND(SIGNAL_INVALID_INPUT,
-                 "inet_ntop(): Converted address string would be larger than size specified",
-                 NULL, NULL);
-        break;
-      default:
-        SIG_SEND(SIGNAL_UNKNOWN_ERROR, "inet_ntop(): Unknown error", NULL, NULL);
-        break;
-    }
-  }
+  if (!out)
+    SIG_SEND(sig_from_errno(errno), str_from_errno("net_ntop(): ", errno),
+             NULL, NULL);
 
   return out;
 }

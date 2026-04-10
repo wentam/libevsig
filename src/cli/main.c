@@ -29,7 +29,7 @@ void middle_func() {
   top_func();
 }
 
-const char* fail_handler(const char* sig_type, void* userdata, char* msg, void* signal_data) {
+const char* fail_handler(const char* sig_type, void* userdata, const char* msg, void* signal_data) {
   return SIG_RESTART_MAIN;
 }
 
@@ -38,6 +38,10 @@ int main() {
 
   {
     SIG_AUTOPOP_HANDLER(SIGNAL_FAIL, fail_handler, NULL);
+
+    FILE* foo = sw_fopen("/tmp/fouhetnoaso", "r");
+
+    sw_fclose(foo);
 
     // This restart runs because the handler we pushed selected SIG_RESTART_MAIN
     // upon receiving SIGNAL_FAIL, and this restart was on the restart stack

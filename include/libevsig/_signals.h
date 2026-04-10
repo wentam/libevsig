@@ -26,7 +26,7 @@ extern thread_local int64_t sig_restart_stack_alloc;
 extern thread_local int64_t sig_restart_stack_fill;
 
 void _sig_send(const char* sig_type,
-               char* msg,
+               const char* msg,
                void* signal_data,
                sig_cleanup_func signal_data_cleanup_func);
 

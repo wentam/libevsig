@@ -16,7 +16,7 @@
         include-what-you-use
       ];
 
-      LD_LIBRARY_PATH = "build/lib/";
+      LD_LIBRARY_PATH = "build/libevsig/";
     };
 
     # Package
