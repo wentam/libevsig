@@ -246,3 +246,14 @@ ssize_t sw_read(int fd, void* buf, size_t nbyte) {
 
   return out;
 }
+
+
+ssize_t sw_write(int fd, void* buf, size_t nbyte) {
+  ssize_t out = write(fd, buf, nbyte);
+
+  if (out == -1)
+    SIG_SEND(sig_from_errno(errno), str_from_errno("write(): ", errno),
+             NULL, NULL);
+
+  return out;
+}
