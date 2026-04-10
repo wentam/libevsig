@@ -1,5 +1,5 @@
-#include "lib/sigwrap_epoll.h"
-#include "lib/signals.h"
+#include "libevsig/sigwrap_epoll.h"
+#include "libevsig/signals.h"
 #include <sys/epoll.h>
 #include <errno.h>
 

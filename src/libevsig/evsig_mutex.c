@@ -1,5 +1,6 @@
-#include "lib/evsig_mutex.h"
+#include "libevsig/evsig_mutex.h"
 #include <time.h>
+#include <stdint.h>
 
 #define FNV_OFFSET 14695981039346656037ULL
 #define FNV_PRIME 1099511628211ULL

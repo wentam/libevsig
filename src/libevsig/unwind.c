@@ -1,14 +1,14 @@
-#include "lib/unwind.h"
+#include "libevsig/unwind.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include "lib/sigwrap.h"
+#include "libevsig/sigwrap.h"
 #include "setjmp.h"
 #include "threads.h"
 #include <signal.h>
 #include <unistd.h>
 #include <string.h>
 #include <pthread.h>
-#include "lib/evsig_mutex.h"
+#include "libevsig/evsig_mutex.h"
 
 // TODO make signal handling optional
 //

@@ -3,14 +3,14 @@ CC ?= clang
 prefix ?= /usr/local/
 # -- end config
 
-INCLUDE = -Iinclude/ -Iinclude/lib/ -I.
+INCLUDE = -Iinclude/
 CFLAGS = -Wall -mavx2 -msse2 -ffast-math -pthread $(INCLUDE) -flto -std=gnu23 -fwrapv -march=x86-64-v3 -fno-strict-aliasing -fzero-call-used-regs=skip -Wno-bitwise-instead-of-logical
 
 
 rwildcard=$(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
 
-SRCS = $(call rwildcard,src/lib/,*.c)
-OBJS = $(SRCS:src/lib/%.c=build/lib/%.o)
+SRCS = $(call rwildcard,src/libevsig/,*.c)
+OBJS = $(SRCS:src/libevsig/%.c=build/libevsig/%.o)
 DEPS = $(OBJS:%.o=%.d)
 
 CLI_SRCS = $(call rwildcard,src/cli/,*.c)
@@ -37,7 +37,7 @@ dev: CFLAGS += -g -Og -fsanitize=address
 default: lib cli
 
 .PHONY: lib
-lib: build/lib/libevsig.so
+lib: build/libevsig/libevsig.so
 
 .PHONY: cli
 cli: build/cli/evsig-cli
@@ -46,17 +46,17 @@ cli: build/cli/evsig-cli
 clean:
 	rm -rf build/
 
-build/lib/:
-	mkdir -p build/lib
+build/libevsig/:
+	mkdir -p build/libevsig
 
 build/cli/:
 	mkdir -p build/cli
 
-build/lib/libevsig.so: build/lib/ $(OBJS)
+build/libevsig/libevsig.so: build/libevsig/ $(OBJS)
 	$(CC) $(CFLAGS) -rdynamic -lm -shared -o $@ $(OBJS)
 
-build/cli/evsig-cli: build/cli/ $(CLI_OBJS) build/lib/libevsig.so
-	$(CC) $(CFLAGS) -Lbuild/lib/ -levsig -rdynamic -o $@ $(CLI_OBJS)
+build/cli/evsig-cli: build/cli/ $(CLI_OBJS) build/libevsig/libevsig.so
+	$(CC) $(CFLAGS) -Lbuild/libevsig/ -levsig -rdynamic -o $@ $(CLI_OBJS)
 
 -include $(DEPS)
 -include $(CLI_DEPS)
@@ -71,6 +71,6 @@ build/%.o: src/%.c
 .PHONY: install
 install:
 	mkdir -p ${DESTDIR}${prefix}/lib/
-	mkdir -p ${DESTDIR}${prefix}/include/evsig/
-	cp build/lib/libevsig.so ${DESTDIR}${prefix}/lib/
-	cp -r include/lib/* ${DESTDIR}${prefix}/include/evsig/
+	mkdir -p ${DESTDIR}${prefix}/include/libevsig/
+	cp build/libevsig/libevsig.so ${DESTDIR}${prefix}/lib/
+	cp -r include/libevsig/* ${DESTDIR}${prefix}/include/libevsig/

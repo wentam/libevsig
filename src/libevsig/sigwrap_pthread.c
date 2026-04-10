@@ -1,5 +1,5 @@
-#include "lib/sigwrap_pthread.h"
-#include "lib/signals.h"
+#include "libevsig/sigwrap_pthread.h"
+#include "libevsig/signals.h"
 #include <errno.h>
 
 

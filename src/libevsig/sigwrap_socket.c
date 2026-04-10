@@ -1,4 +1,4 @@
-#include "lib/signals.h"
+#include "libevsig/signals.h"
 #include <sys/socket.h>
 #include <errno.h>
 

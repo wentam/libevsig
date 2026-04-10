@@ -1,10 +1,10 @@
-#include "lib/sigwrap.h"
+#include "libevsig/sigwrap.h"
 #include <errno.h>
 #include <stdlib.h>
 #include "__stdarg_va_arg.h"
 #include "asm-generic/errno-base.h"
 #include "asm-generic/errno.h"
-#include "lib/signals.h"
+#include "libevsig/signals.h"
 #include "stdio.h"
 #include <sys/mman.h>
 #include <unistd.h>

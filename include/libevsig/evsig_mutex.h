@@ -1,5 +1,6 @@
 #pragma once
 #include <stdatomic.h>
+#include <stdint.h>
 
 // simple mutex using compare-and-swap so we have control over
 // what is async-handler-safe.

@@ -27,9 +27,9 @@ to UNWIND_ACTION even though the stack unwinds past it.
 
 ```C
 #include <stdio.h>
-#include <evsig/signals.h>
-#include <evsig/sigwrap.h>
-#include <evsig/unwind.h>
+#include <libevsig/signals.h>
+#include <libevsig/sigwrap.h>
+#include <libevsig/unwind.h>
 #include "stdlib.h"
 
 SIG_DEFTYPE(SIG_RESTART_MAIN);

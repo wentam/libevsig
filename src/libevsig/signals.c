@@ -1,16 +1,16 @@
 #define _GNU_SOURCE // Needed for dladdr()
-#include "lib/signals.h"
+#include "libevsig/signals.h"
 #include <execinfo.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <pthread.h>
-#include "lib/sigwrap.h"
+#include "libevsig/sigwrap.h"
 #include "stdio.h"
 #include "threads.h"
 #include "stdbool.h"
 #include <stdint.h>
-#include "lib/_signals.h"
-#include "lib/unwind.h"
+#include "libevsig/_signals.h"
+#include "libevsig/unwind.h"
 #include <string.h>
 #include <dlfcn.h>
 
