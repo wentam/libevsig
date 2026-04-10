@@ -9,7 +9,7 @@ SIG_DEFTYPE(SIG_RESTART_MIDDLE);
 SIG_DEFTYPE(SIG_RESTART_TOP);
 
 void top_func() {
-  SIG_PROVIDE_AUTOPOP_RESTART(SIGNAL_FAIL, SIG_RESTART_TOP, ({
+  SIG_AUTOPOP_RESTART(SIGNAL_FAIL, SIG_RESTART_TOP, ({
     sw_fprintf(stderr, "RESTART_TOP\n");
     exit(1);
   }));
@@ -21,7 +21,7 @@ void middle_func() {
   sw_fprintf(stderr, "pretending to ALLOCATE something\n");
   UNWIND_ACTION(unwind_handler_print, "pretending to FREE something\n");
 
-  SIG_PROVIDE_AUTOPOP_RESTART(SIGNAL_FAIL, SIG_RESTART_MIDDLE, ({
+  SIG_AUTOPOP_RESTART(SIGNAL_FAIL, SIG_RESTART_MIDDLE, ({
     sw_fprintf(stderr, "RESTART_MIDDLE\n");
     exit(1);
   }));
@@ -49,7 +49,7 @@ int main() {
     //
     // After running the restart, execution would continue on to repeat
     // middle_func() again if we didn't have the exit() call.
-    SIG_PROVIDE_AUTOPOP_RESTART(SIGNAL_FAIL, SIG_RESTART_MAIN, ({
+    SIG_AUTOPOP_RESTART(SIGNAL_FAIL, SIG_RESTART_MAIN, ({
       sw_fprintf(stderr, "RESTART_MAIN\n");
       exit(1);
     }));

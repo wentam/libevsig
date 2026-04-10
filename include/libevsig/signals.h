@@ -95,7 +95,7 @@ const char* sig_static_handler(const char* sig_type, void* userdata, char* msg, 
 #define SIG_SEND(sig_type, msg, signal_data, signal_data_cleanup_func) \
   _SIG_SEND(sig_type, msg, signal_data, signal_data_cleanup_func, GENSYM(sigsend));
 
-#define SIG_PROVIDE_AUTOPOP_RESTART(sig_type, restart_type, restart_action) \
+#define SIG_AUTOPOP_RESTART(sig_type, restart_type, restart_action) \
   _SIG_PROVIDE_AUTOPOP_RESTART(sig_type, restart_type, { restart_action; }, GENSYM(sigaprestart), GENSYM(sigaprestartb))
 
 #define SIG_PROVIDE_RESTART(sig_type, might_signal_code, restart_type, restart_action) \
