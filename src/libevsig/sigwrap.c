@@ -237,8 +237,12 @@ const char* sw_inet_ntop(int af, const void *restrict src,
   return out;
 }
 
-// TODO sprintf
-// TODO snprintf
+ssize_t sw_read(int fd, void* buf, size_t nbyte) {
+  ssize_t out = read(fd, buf, nbyte);
 
+  if (out == -1)
+    SIG_SEND(sig_from_errno(errno), str_from_errno("read(): ", errno),
+             NULL, NULL);
 
-// TODO grep for all of these and replace with wrappers
+  return out;
+}
