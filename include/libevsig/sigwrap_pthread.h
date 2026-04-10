@@ -1,5 +1,6 @@
 #pragma once
 #include <pthread.h>
+#include "libevsig/errno_signals.h"
 
 int sw_pthread_create(pthread_t *restrict thread,
                       const pthread_attr_t *restrict attr,

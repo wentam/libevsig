@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <arpa/inet.h>
+#include "libevsig/errno_signals.h"
 
 // TODO fmemopen
 // TODO fopencookie

@@ -1,5 +1,6 @@
 #pragma once
 #include <sys/socket.h>
+#include "libevsig/errno_signals.h"
 
 int sw_socket(int domain, int type, int protocol);
 int sw_setsockopt(int socket,

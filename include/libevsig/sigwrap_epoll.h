@@ -1,5 +1,6 @@
 #pragma once
 #include <sys/epoll.h>
+#include "libevsig/errno_signals.h"
 
 int sw_epoll_create1(int flags);
 int sw_epoll_ctl(int epfd, int op, int fd, struct epoll_event *_Nullable event);
