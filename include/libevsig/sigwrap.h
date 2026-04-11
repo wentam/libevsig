@@ -33,3 +33,5 @@ const char* sw_inet_ntop(int af, const void *restrict src,
                          char dst[], socklen_t size);
 ssize_t     sw_read(int fd, void* buf, size_t nbyte);
 ssize_t     sw_write(int fd, void* buf, size_t nbyte);
+ssize_t     sw_getrandom(void* buf, size_t size, unsigned int flags);
+

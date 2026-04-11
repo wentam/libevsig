@@ -12,6 +12,7 @@
 #include <stdint.h>
 #include <fcntl.h>
 #include <arpa/inet.h>
+#include <sys/random.h>
 
 void* sw_malloc(size_t size) {
   void* out = malloc(size);
@@ -253,6 +254,16 @@ ssize_t sw_write(int fd, void* buf, size_t nbyte) {
 
   if (out == -1)
     SIG_SEND(sig_from_errno(errno), str_from_errno("write(): ", errno),
+             NULL, NULL);
+
+  return out;
+}
+
+ssize_t sw_getrandom(void* buf, size_t size, unsigned int flags) {
+  ssize_t out = getrandom(buf, size, flags);
+
+  if (out == -1)
+    SIG_SEND(sig_from_errno(errno), str_from_errno("getrandom(): ", errno),
              NULL, NULL);
 
   return out;
