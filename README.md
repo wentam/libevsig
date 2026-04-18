@@ -15,6 +15,8 @@ you probably need to add pthread_testcancel() at good places to stop.
 * If there's a bad place to stop your thread, temporarily disable cancelability
 * If you have a mutex, you probably want to unlock it with UNWIND_ACTION in case the stack unwinds
 in order to prevent a stale lock.
+* It is perfectly fine to send new signal that may unwind inside of an unwind action. Your unwind handler will not re-run and has been removed from the unwind stack by the time it is called.
+* It is perfectly fine to use UNWIND_ACTION inside of another UNWIND_ACTION's function.
 
 # Example
 

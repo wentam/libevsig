@@ -353,13 +353,17 @@ void _unwind(unwind_return_point* p) {
   // Call all unwind handlers down to unwind_to
   if (unwind_stack_fill > 0) {
     for (int64_t i = unwind_stack_fill-1; i >= p->unwind_to; i--) {
+      // It is critical to adjust the unwind stack *before*
+      // calling the handler in case the handler also chooses
+      // to unwind somewhere. This prevents infinite recursion.
+      unwind_stack_fill--;
       unwind_handler_stack_entry* e = unwind_stack+i;
       e->h(e->userdata);
     }
   }
 
   // Remove all stack items down to unwind_index
-  unwind_stack_fill = p->unwind_to;
+  //unwind_stack_fill = p->unwind_to;
 
   longjmp(p->jbuf, 1);
 }
@@ -383,8 +387,11 @@ void _unwind_action(on_unwind_handler h, void* userdata) {
 }
 
 void unwind_run_handler(unwind_handler_stack_entry* e) {
-  e->h(e->userdata);
+  // It is critical to adjust the unwind stack *before*
+  // calling the handler in case the handler also chooses
+  // to unwind somewhere. This prevents infinite recursion.
   unwind_stack_fill--;
+  e->h(e->userdata);
 
   // TODO: we can't assume we just ran the last element with this function design
   //       unless we make this a unwind_run_handler_pop with no args

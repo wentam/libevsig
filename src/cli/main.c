@@ -8,18 +8,27 @@ SIG_DEFTYPE(SIG_RESTART_MAIN);
 SIG_DEFTYPE(SIG_RESTART_MIDDLE);
 SIG_DEFTYPE(SIG_RESTART_TOP);
 
+static void unwind_handler_sigsend(void*ptr) {
+  fprintf(stderr, "hi\n");
+  SIG_SEND(SIGNAL_FAIL, "This signal was sent from an unwind handler", NULL, NULL);
+  fprintf(stderr, "hi2\n");
+}
+
 void top_func() {
   SIG_AUTOPOP_RESTART(SIGNAL_FAIL, SIG_RESTART_TOP, ({
     sw_fprintf(stderr, "RESTART_TOP\n");
     exit(1);
   }));
 
-  SIG_SEND(SIGNAL_FAIL, "something bad happened", NULL, NULL);
+  //SIG_SEND(SIGNAL_FAIL, "something bad happened", NULL, NULL);
 }
 
 void middle_func() {
+
   sw_fprintf(stderr, "pretending to ALLOCATE something\n");
   UNWIND_ACTION(unwind_handler_print, "pretending to FREE something\n");
+
+  UNWIND_ACTION(unwind_handler_sigsend, NULL);
 
   SIG_AUTOPOP_RESTART(SIGNAL_FAIL, SIG_RESTART_MIDDLE, ({
     sw_fprintf(stderr, "RESTART_MIDDLE\n");
@@ -37,11 +46,11 @@ int main() {
   sig_init();
 
   {
-    SIG_AUTOPOP_HANDLER(SIGNAL_FAIL, fail_handler, NULL);
+    //SIG_AUTOPOP_HANDLER(SIGNAL_FAIL, fail_handler, NULL);
 
-    FILE* foo = sw_fopen("/tmp/fouhetnoaso", "r");
+    //FILE* foo = sw_fopen("/tmp/fouhetnoaso", "r");
 
-    sw_fclose(foo);
+    //sw_fclose(foo);
 
     // This restart runs because the handler we pushed selected SIG_RESTART_MAIN
     // upon receiving SIGNAL_FAIL, and this restart was on the restart stack
