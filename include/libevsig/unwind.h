@@ -4,6 +4,10 @@
 #include <stdint.h>
 #include <threads.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define __GENSYM(base, counter) base##_gensym_##counter
 #define _GENSYM(base, counter) __GENSYM(base, counter)
 
@@ -95,3 +99,7 @@ void unwind_handler_print(void* str);
   p.unwind_to = unwind_stack_fill; \
   if(setjmp(p.jbuf)) p.returned = true; \
   if(p.returned) { handle_unwind_code; }
+
+#ifdef __cplusplus
+}
+#endif

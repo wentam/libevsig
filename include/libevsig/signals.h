@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define __GENSYM(base, counter) base##_gensym_##counter
 #define _GENSYM(base, counter) __GENSYM(base, counter)
 
@@ -120,3 +124,8 @@ const char* sig_static_handler(const char* sig_type, void* userdata, char* msg, 
 
 #define SIG_RESTART_AVAILABLE(sig_type, restart_type) \
   _sig_restart_available(sig_type, restart_type)
+
+
+#ifdef __cplusplus
+}
+#endif

@@ -2,6 +2,10 @@
 #include "libevsig/signals.h"
 #include <errno.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Returns NULL if the errno can't be converted
 const char* sig_from_errno(int errno_in);
 
@@ -284,3 +288,8 @@ SIG_DECLTYPE(SIGNAL_EXFULL);
 //#define EWOULDBLOCK EAGAIN
 //#define EXDEV 18
 //#define EXFULL 54
+
+
+#ifdef __cplusplus
+}
+#endif

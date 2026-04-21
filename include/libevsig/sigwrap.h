@@ -4,6 +4,10 @@
 #include <arpa/inet.h>
 #include "libevsig/errno_signals.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // TODO fmemopen
 // TODO fopencookie
 // TODO sprintf
@@ -35,3 +39,6 @@ ssize_t     sw_read(int fd, void* buf, size_t nbyte);
 ssize_t     sw_write(int fd, void* buf, size_t nbyte);
 ssize_t     sw_getrandom(void* buf, size_t size, unsigned int flags);
 
+#ifdef __cplusplus
+}
+#endif
