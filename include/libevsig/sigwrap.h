@@ -6,6 +6,7 @@
 
 #ifdef __cplusplus
 extern "C" {
+#define restrict __restrict
 #endif
 
 // TODO fmemopen
