@@ -1,4 +1,5 @@
 #pragma once
+#include "libevsig/thread_shutdown_signal.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -71,10 +72,34 @@ SIG_DECLTYPE(SIGNAL_UNSUPPORTED);
 // Works the same way as signal definitions above
 SIG_DECLTYPE(SIG_RESTART_NULL);
 
-// Call PER THREAD to init the signal system and unwind system. Else undefined behavior
-void sig_init();
+// Call PER THREAD to init the signal system and unwind system.
+//
+// If threadlocal is true, the behavior the signal system is purely
+// thread-local. An unhandled signal means just the thread will shut down.
+//
+// If threadlocal is false, this thread will be registered automatically
+// with the evsig_thread_shutdown_signal mechanism to ask other threads to exit,
+// will send the shutdown signal on an unhandled evsig signal, and exit
+// the process once they have all exited. Additionaly, an OS signal handler
+// will be registered to ask all threads to exit cleanly when an
+// unhandled signal occurs in any thread set up with threadlocal as false. Once
+// all threads have reported as shutdown or a timeout is elapsed, the process
+// will exit.
+//
+// exit_thread_func is the function to call to immediately exit the currently
+// running thread. This will be called after all unwind actions have run when
+// you send a signal in-thread. If you're using pthreads, you probably want to
+// just pass pthread_exit directly here. This exists to make this library
+// agnostic to threading library and compatible with setups such as manual
+// usage of clone().
+void sig_init(bool threadlocal,
+              void (*exit_thread_func)(void*),
+              void* exit_thread_func_userdata);
 
 // Call PER THREAD when done using the signal system to clean up memory
+//
+// This will call evsig_thread_shutdown_signal_confirm_shutdown for you,
+// so you don't need to explicitly do so.
 void sig_cleanup();
 
 typedef void (*sig_cleanup_func)(void* thing);

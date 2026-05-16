@@ -33,6 +33,7 @@ to UNWIND_ACTION even though the stack unwinds past it.
 #include <libevsig/sigwrap.h>
 #include <libevsig/unwind.h>
 #include "stdlib.h"
+#include <pthread.h>
 
 SIG_DEFTYPE(SIG_RESTART_MAIN);
 SIG_DEFTYPE(SIG_RESTART_MIDDLE);
@@ -64,7 +65,7 @@ const char* fail_handler(const char* sig_type, void* userdata, char* msg, void* 
 }
 
 int main() {
-  sig_init();
+  sig_init(true, pthread_exit, NULL);
 
   {
     SIG_AUTOPOP_HANDLER(SIGNAL_FAIL, fail_handler, NULL);
@@ -115,7 +116,11 @@ counter on subsequent restarts:
     if (slep > slep_max) slep = slep_max;
   }));
 ```
+# Multithreaded environments
 
+TODO
+
+See comments above sig_init in signals.h for now
 
 # How it works
 

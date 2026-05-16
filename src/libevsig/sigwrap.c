@@ -2,7 +2,7 @@
 #include "libevsig/errno_signals.h"
 #include <errno.h>
 #include <stdlib.h>
-#include "__stdarg_va_arg.h"
+#include <stdarg.h>
 #include "asm-generic/errno-base.h"
 #include "asm-generic/errno.h"
 #include "libevsig/signals.h"

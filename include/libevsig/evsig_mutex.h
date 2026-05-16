@@ -3,7 +3,9 @@
 #include <stdint.h>
 
 // simple mutex using compare-and-swap so we have control over
-// what is async-handler-safe.
+// what is async-handler-safe as well as help make stuff
+// less pthread-specific (pthread mutexes should be used
+// in pthreads only).
 
 typedef _Atomic uint8_t evsig_mutex;
 

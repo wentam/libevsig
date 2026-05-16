@@ -13,6 +13,7 @@
 #include "libevsig/unwind.h"
 #include <string.h>
 #include <dlfcn.h>
+#include <assert.h>
 
 #define CLR_RED     "\x1b[31m"
 #define CLR_GREEN   "\x1b[32m"
@@ -51,6 +52,9 @@ typedef struct {
     char func[256];
     char lib[256];
 } frame_info;
+
+static thread_local void (*exit_this_thread_func)(void*) = NULL;
+static thread_local void* exit_this_thread_func_ud = NULL;
 
 static const char* catchall_handler(const char* sig_type, void* userdata, const char* msg, void* signal_data) {
   sw_fprintf(stderr, CLR_BOLD "\n------------------------------\n" CLR_RESET, sig_type);
@@ -126,25 +130,43 @@ static const char* catchall_handler(const char* sig_type, void* userdata, const 
   sw_fprintf(stderr, "\nRaising SIGINT (this should stop debuggers/the program)\n", sig_type);
   sw_fprintf(stderr, CLR_BOLD "------------------------------\n" CLR_RESET, sig_type);
 
-  // Run all unwind handlers because we're not actually unwinding
-  //unwind_run_all_handlers();
-
   // Raise signal so GDB/the program stops
+  //
+  // Depending on user signal handling situation this may or may not actually
+  // do anything.
   raise(SIGINT);
 
-  // In case the signal doesn't work for some reason
+  // Ask all threads to unwind cleanly.
   unwind_all();
 
-  // Sleep and check for pthread cancellation forever while we wait for shutdown
-  while(true) {
-    pthread_testcancel();
-    usleep(1000);
-  }
+  // Cleanup the unwind/signal system. This will also run all unwind actions in this
+  // thread such that we exit cleanly.
+  //
+  // This is important because even though this thread will be asked
+  // to unwind cleanly, we will never return from this function to
+  // actually accomplish that.
+  sig_cleanup();
 
+  // Exit from this thread.
+  exit_this_thread_func(exit_this_thread_func_ud);
+
+  // Should never happen
+  assert(false);
+  while(true) { sleep(1); }
   return SIG_RESTART_NULL;
 }
 
-void sig_init() {
+void sig_init(bool threadlocal,
+              void (*exit_thread_func)(void*),
+              void* exit_thread_func_userdata) {
+
+  exit_this_thread_func    = exit_thread_func;
+  exit_this_thread_func_ud = exit_thread_func_userdata;
+
+  if (!threadlocal)
+    evsig_thread_shutdown_signal_register_thread(&evsig_global_thread_shutdown_signal,
+                                                 gettid());
+
   sig_handler_stack_alloc = 32;
   sig_handler_stack_fill  = 0;
   sig_handler_stack       = malloc(sizeof(sig_handler_stack_entry)*sig_handler_stack_alloc);
@@ -162,7 +184,7 @@ void sig_init() {
   }
 
   SIG_PERSISTENT_HANDLER(SIGNAL_ALL, catchall_handler, NULL);
-  unwind_init();
+  unwind_init(threadlocal);
 }
 
 void sig_cleanup() {

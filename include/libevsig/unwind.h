@@ -55,8 +55,19 @@ extern thread_local uint64_t unwind_stack_fill;
 // avoid a stale lock.
 void unwind_dispatch_all();
 
-void unwind_init(); // Must be called before using unwind system
-void unwind_cleanup(); // Call when done using unwind system
+// Can be used as a thread shutdown signal instead of exit_thread_cb
+//extern _Atomic bool evsig_thread_shutdown_flag;
+
+// Must be called before using unwind system
+//
+// You must also call unwind_cleanup() when done.
+void unwind_init(bool threadlocal);
+
+// Call when done using unwind system
+//
+// This will call evsig_thread_shutdown_signal_confirm_shutdown for you,
+// so you don't need to explicitly do so.
+void unwind_cleanup();
 
 void unwind_all();
 
@@ -64,7 +75,6 @@ void _unwind(unwind_return_point* p);
 void _unwind_action(on_unwind_handler h, void* userdata);
 void unwind_run_handler(unwind_handler_stack_entry* e); // TODO only works with last one
 void unwind_rm_handler(unwind_handler_stack_entry* e); // TODO only works with last one
-void unwind_run_all_handlers();
 void unwind_handler_free(void* ptr);
 void unwind_handler_fclose(void* file);
 void unwind_handler_print(void* str);
