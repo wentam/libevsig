@@ -100,6 +100,7 @@ void evsig_thread_shutdown_signal_register_thread(evsig_thread_shutdown_signal* 
 
       pthread_t t;
       int r = pthread_create(&t, NULL, _shutdown_thread, s);
+      pthread_detach(t); // So we don't need to join it
 
       if (r != 0) {
         fprintf(stderr, "Failed to create shutdown thread for unwind system\n");
