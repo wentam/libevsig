@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <arpa/inet.h>
 #include "libevsig/errno_signals.h"
+#include <sys/stat.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -22,15 +23,20 @@ void*       sw_calloc   (size_t nmemb, size_t size);
 void*       sw_realloc  (void* ptr, size_t size);
 size_t      sw_fread    (void* ptr, size_t size, size_t nmemb, FILE* stream);
 size_t      sw_fwrite   (const void* ptr, size_t size, size_t nmemb, FILE* stream);
+ssize_t     sw_pwrite   (int fd, void* buf, size_t nbyte, off_t offset);
 FILE*       sw_fopen    (const char* pathname, const char* mode);
 int         sw_fclose   (FILE* stream);
 int         sw_fflush   (FILE* stream);
 int         sw_fsync    (int fd);
+int         sw_ftruncate(int fd, off_t len);
+int         sw_fallocate(int fd, int mode, off_t off, off_t size);
+int         sw_fstat    (int fd, struct stat* buf);
 int         sw_msync    (void* addr, size_t len, int flags);
 int         sw_fseek    (FILE* stream, long offset, int whence);
 int         sw_printf   (const char* format, ...);
 int         sw_fprintf  (FILE* stream, const char* format, ...);
 void*       sw_mmap     (void* addr, size_t len, int prot, int flags, int fd, off_t off);
+int         sw_madvise  (void* addr, size_t size, int advice);
 int         sw_munmap   (void* addr, size_t len);
 int         sw_fcntl3   (int fd, int cmd, uint64_t a);
 int         sw_fcntl2   (int fd, int cmd);

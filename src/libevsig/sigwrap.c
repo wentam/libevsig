@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include "libevsig/sigwrap.h"
 #include "libevsig/errno_signals.h"
 #include <errno.h>
@@ -13,6 +14,8 @@
 #include <fcntl.h>
 #include <arpa/inet.h>
 #include <sys/random.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 
 void* sw_malloc(size_t size) {
   void* out = malloc(size);
@@ -95,6 +98,16 @@ size_t sw_fwrite(const void* ptr, size_t size, size_t nmemb, FILE* stream) {
   return out;
 }
 
+ssize_t sw_pwrite(int fd, void* buf, size_t nbyte, off_t offset) {
+  ssize_t out = pwrite(fd, buf, nbyte, offset);
+
+  if (out == -1)
+    SIG_SEND(sig_from_errno(errno), str_from_errno("pwrite(): ", errno),
+             NULL, NULL);
+
+  return out;
+}
+
 // TODO grep for all fopen usage and replace
 FILE* sw_fopen(const char* pathname, const char* mode) {
   FILE* out = fopen(pathname, mode);
@@ -144,6 +157,16 @@ void* sw_mmap(void* addr, size_t len, int prot, int flags, int fd, off_t off) {
   return out;
 }
 
+int sw_madvise(void* addr, size_t size, int advice) {
+  int out = madvise(addr, size, advice);
+
+  if (out == -1) SIG_SEND(sig_from_errno(errno),
+                          str_from_errno("madvise(): ", errno),
+                          NULL, NULL);
+
+  return out;
+}
+
 int sw_msync(void* addr, size_t len, int flags) {
   int out = msync(addr, len, flags);
 
@@ -172,6 +195,36 @@ int sw_fseek(FILE* stream, long offset, int whence) {
 
   if (out == -1)
     SIG_SEND(sig_from_errno(errno), str_from_errno("fseek(): ", errno),
+             NULL, NULL);
+
+  return out;
+}
+
+int sw_ftruncate(int fd, off_t len) {
+  int out = ftruncate(fd, len);
+
+  if (out == -1)
+    SIG_SEND(sig_from_errno(errno), str_from_errno("ftruncate(): ", errno),
+             NULL, NULL);
+
+  return out;
+}
+
+int sw_fallocate(int fd, int mode, off_t off, off_t size) {
+  int out = fallocate(fd, mode, off, size);
+
+  if (out == -1)
+    SIG_SEND(sig_from_errno(errno), str_from_errno("fallocate(): ", errno),
+             NULL, NULL);
+
+  return out;
+}
+
+int sw_fstat(int fd, struct stat* buf) {
+  int out = fstat(fd, buf);
+
+  if (out == -1)
+    SIG_SEND(sig_from_errno(errno), str_from_errno("fstat(): ", errno),
              NULL, NULL);
 
   return out;
