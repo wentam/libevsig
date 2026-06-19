@@ -208,6 +208,11 @@ void evsig_thread_shutdown_signal_unregister_cb(evsig_thread_shutdown_signal* s,
   evsig_unlock(&s->master_mutex);
 }
 
+void unwind_handler_evsig_thread_shutdown_signal_unregister_cb(void* ptr) {
+  evsig_cb_handle* h = ptr;
+  evsig_thread_shutdown_signal_unregister_cb(h->s, h->id);
+}
+
 bool evsig_thread_shutdown_signal_send_block(evsig_thread_shutdown_signal* s,
                                              uint64_t timeout_ms) {
   bool ret = false;
