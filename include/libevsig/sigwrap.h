@@ -28,6 +28,7 @@ FILE*       sw_fopen    (const char* pathname, const char* mode);
 int         sw_fclose   (FILE* stream);
 int         sw_fflush   (FILE* stream);
 int         sw_fsync    (int fd);
+int         sw_fdatasync(int fd);
 int         sw_ftruncate(int fd, off_t len);
 int         sw_fallocate(int fd, int mode, off_t off, off_t size);
 int         sw_fstat    (int fd, struct stat* buf);

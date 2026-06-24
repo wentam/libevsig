@@ -185,6 +185,15 @@ int sw_fsync(int fd) {
   return out;
 }
 
+int sw_fdatasync(int fd) {
+  int out = fdatasync(fd);
+
+  if (out) SIG_SEND(sig_from_errno(errno), str_from_errno("fdatasync(): ", errno),
+                    NULL, NULL);
+
+  return out;
+}
+
 int sw_fseek(FILE* stream, long offset, int whence) {
   if (!stream) {
     SIG_SEND(SIGNAL_INVALID_INPUT, "fseek: Can't seek NULL stream", NULL, NULL);
