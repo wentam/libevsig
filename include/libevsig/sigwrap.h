@@ -23,7 +23,7 @@ void*       sw_calloc   (size_t nmemb, size_t size);
 void*       sw_realloc  (void* ptr, size_t size);
 size_t      sw_fread    (void* ptr, size_t size, size_t nmemb, FILE* stream);
 size_t      sw_fwrite   (const void* ptr, size_t size, size_t nmemb, FILE* stream);
-ssize_t     sw_pwrite   (int fd, void* buf, size_t nbyte, off_t offset);
+ssize_t     sw_pwrite   (int fd, const void* buf, size_t nbyte, off_t offset);
 FILE*       sw_fopen    (const char* pathname, const char* mode);
 int         sw_fclose   (FILE* stream);
 int         sw_fflush   (FILE* stream);
@@ -44,7 +44,7 @@ int         sw_fcntl2   (int fd, int cmd);
 const char* sw_inet_ntop(int af, const void *restrict src,
                          char dst[], socklen_t size);
 ssize_t     sw_read(int fd, void* buf, size_t nbyte);
-ssize_t     sw_write(int fd, void* buf, size_t nbyte);
+ssize_t     sw_write(int fd, const void* buf, size_t nbyte);
 ssize_t     sw_getrandom(void* buf, size_t size, unsigned int flags);
 
 #ifdef __cplusplus
