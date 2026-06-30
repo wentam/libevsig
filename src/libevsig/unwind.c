@@ -98,6 +98,31 @@ static void _sighandle_dispatch(int sig) {
   // Tell all threads to exit, running all unwind handlers
   evsig_thread_shutdown_signal_send_async(&evsig_global_thread_shutdown_signal,
                                           true);
+
+  // There exists signals we can return from, and signals we should not.
+  //
+  // For example, thread-directed SIGBUS is not something we should
+  // return from unless we otherwise handled it in some way, but
+  // we did not.
+  //
+  // TODO At some point, we of course need to play along better
+  // with user-defined signal handlers, as right now we're
+  // being a bad library and stealing them from the user.
+  //
+  // This probably means signal chaining, where it would be
+  // up to the user which signals constitute a hard crash
+  // vs a clean exit.
+
+  switch (sig) {
+    case SIGINT:  return; break;
+    case SIGTERM: return; break;
+    case SIGQUIT: return; break;
+  }
+
+  _print("Thread that got this signal is exiting uncleanly due to signal "
+         "type.");
+
+  pthread_exit(NULL);
 }
 
 void unwind_all() {
